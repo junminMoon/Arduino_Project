@@ -28,11 +28,11 @@ public class ArduinoPackage : MonoBehaviour
         {
             serialPort.ReadTimeout = 25;
             serialPort.Open();
-            Debug.Log($"<color=green>아두이노 연결 성공! ({portName})</color>"); // '연결 성공' 로그는 남겨두는 게 좋습니다!
+            Debug.Log($"<color=green>아두이노 연결 성공! ({portName})</color>"); // '연결 성공'
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"<color=red>아두이노 연결 실패: {ex.Message}</color>"); // '실패' 로그도 남겨둡니다.
+            Debug.LogError($"<color=red>아두이노 연결 실패: {ex.Message}</color>"); // '실패'
         }
     }
 
