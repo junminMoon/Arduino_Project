@@ -1,0 +1,3 @@
+1. 통신을 위해서 Project settings - Player - Other Settings - API compability에서 .NET Standard 2.1을 .NET framework로 수정하였습니다.
+
+2. 공미로 게임에 쓴 모든 에셋들은 폴더 안에 있는 것들로 한정했고, 타이틀 스크린은 뺐습니다. 최대한 저는 독립적으로 개발을 하겠습니다.
