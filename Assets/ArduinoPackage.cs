@@ -8,7 +8,7 @@ public class ArduinoPackage : MonoBehaviour
 {
     [Header("시리얼 포트 설정")]
     [Tooltip("아두이노가 연결된 COM 포트 (예: COM5)")]
-    private String portName = "COM7";
+    private String portName;
 
     [Tooltip("아두이노와 동일하게 맞춘 통신 속도")]
     private int baudRate = 9600;
@@ -16,6 +16,7 @@ public class ArduinoPackage : MonoBehaviour
     private SerialPort serialPort;
     public String portData;
     public bool isConnect;
+    public String port = "COM7";
 
     void Start()
     {
