@@ -97,3 +97,16 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+Assets/BallMazeTemp.meta
+Assets/BallMazeTemp/BallMazeTemp.unity
+Assets/BallMazeTemp/BallMazeTemp.unity.meta
+ProjectSettings/Packages/com.unity.learn.iet-framework/Settings.json
+ProjectSettings/Packages/com.unity.probuilder/Settings.json
+ProjectSettings/Packages/com.unity.testtools.codecoverage/Settings.json
+ProjectSettings/ProjectSettings.asset
+ProjectSettings/ShaderGraphSettings.asset
+ProjectSettings/Packages/com.unity.learn.iet-framework/Settings.json
+ProjectSettings/Packages/com.unity.probuilder/Settings.json
+ProjectSettings/Packages/com.unity.testtools.codecoverage/Settings.json
+ProjectSettings/ProjectSettings.asset
+ProjectSettings/ShaderGraphSettings.asset
