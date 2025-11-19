@@ -1,39 +1,55 @@
-using System;
 using UnityEngine;
-using System.IO.Ports; // 시리얼 통신
+using System.IO.Ports;
 using System.Globalization;
-using JetBrains.Annotations; // 소수점(`.`) 처리를 위해
 
 public class ArduinoPackage : MonoBehaviour
 {
-    [Header("시리얼 포트 설정")]
-    [Tooltip("아두이노가 연결된 COM 포트 (예: COM5)")]
-    private String portName;
+    // ==========================================
+    // 1. 외부 공개 데이터 (Properties)
+    // ==========================================
+    public bool IsConnected { get; private set; }
 
-    [Tooltip("아두이노와 동일하게 맞춘 통신 속도")]
-    private int baudRate = 9600;
+    // [MPU6050] 기울기 및 RAW 데이터
+    public float CurrentPitch { get; private set; }
+    public float CurrentRoll { get; private set; }
 
+    // [Joystick] 조이스틱 데이터
+    public float JoyX { get; private set; }    // 0 ~ 1023
+    public float JoyY { get; private set; }    // 0 ~ 1023
+    public bool IsJoyPressed { get; private set; } // 조이스틱 버튼 눌림 여부
+
+    // [Buttons] 버튼 상태 (B1, B2, B3)
+    public bool IsButton1Pressed { get; private set; }
+    public bool IsButton2Pressed { get; private set; }
+    public bool IsButton3Pressed { get; private set; }
+
+
+    // ==========================================
+    // 2. 내부 변수
+    // ==========================================
     private SerialPort serialPort;
-    public String portData;
-    public bool isConnect;
-    public String port = "COM7";
+    private const float FilterWeight = 0.98f;
 
-    void Start()
-    {
-        serialPort = new SerialPort(portName, baudRate);  
-    }
-    // 시리얼 포트 연결 시도
+
+    // ==========================================
+    // 3. 초기화 및 연결 관리
+    // ==========================================
+    [SerializeField] private string portName = "COM8";
+    [SerializeField] private int baudRate = 9600;
     public void Connect()
     {
         try
         {
-            serialPort.ReadTimeout = 25;
+            serialPort = new SerialPort(portName, baudRate);
+            serialPort.ReadTimeout = 50;
             serialPort.Open();
-            Debug.Log($"<color=green>아두이노 연결 성공! ({portName})</color>"); // '연결 성공'
+            IsConnected = true;
+            Debug.Log($"<color=green>아두이노 연결 성공! ({portName})</color>");
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"<color=red>아두이노 연결 실패: {ex.Message}</color>"); // '실패'
+            IsConnected = false;
+            Debug.LogError($"<color=red>아두이노 연결 실패: {ex.Message}</color>");
         }
     }
 
@@ -42,33 +58,130 @@ public class ArduinoPackage : MonoBehaviour
         if (serialPort != null && serialPort.IsOpen)
         {
             serialPort.Close();
+            IsConnected = false;
         }
     }
 
-    void Update()
+
+    // ==========================================
+    // 4. 메인 루프 (외부에서 호출)
+    // ==========================================
+    public void ReadSerialLoop()
     {
-        isConnect = serialPort.IsOpen;
-        if (serialPort != null && serialPort.IsOpen)
+        if (!IsConnected || serialPort == null || !serialPort.IsOpen) return;
+
+        try
+        {
+            string rawData = serialPort.ReadLine();
+            DispatchData(rawData);
+        }
+        catch (System.TimeoutException) { }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"데이터 오류: {ex.Message}");
+        }
+    }
+
+
+    // ==========================================
+    // 5. 데이터 분류 (Dispatcher)
+    // ==========================================
+    private void DispatchData(string data)
+    {
+        // 데이터 예시: "G ...", "J 512,512,0", "B1 1"
+        if (string.IsNullOrEmpty(data)) return;
+
+        string[] parts = data.Split(' ');
+        if (parts.Length < 2) return;
+
+        string key = parts[0];
+        string value = parts[1];
+
+        switch (key)
+        {
+            case "G":
+                ProcessMPU(value);
+                break;
+            case "J": // 조이스틱 데이터 처리
+                ProcessJoystick(value);
+                break;
+            case "B1": // 버튼 1, 2, 3 각각 처리
+            case "B2":
+            case "B3":
+                ProcessButtons(key, value);
+                break;
+        }
+    }
+
+
+    // ==========================================
+    // 6. 기능별 처리 함수 (Handlers)
+    // ==========================================
+
+    // [MPU6050]
+    private void ProcessMPU(string csvData)
+    {
+        string[] values = csvData.Split(',');
+        if (values.Length != 6) return;
+
+        try
+        {
+            float gx = float.Parse(values[0], CultureInfo.InvariantCulture);
+            float gy = float.Parse(values[1], CultureInfo.InvariantCulture);
+            // float gz = float.Parse(values[2]); 
+
+            float ax = float.Parse(values[3], CultureInfo.InvariantCulture);
+            float ay = float.Parse(values[4], CultureInfo.InvariantCulture);
+            float az = float.Parse(values[5], CultureInfo.InvariantCulture);
+
+            CalculateComplementaryFilter(gx, gy, ax, ay, az);
+        }
+        catch { }
+    }
+
+    // [Joystick] J x,y,sw (예: "512,512,0")
+    private void ProcessJoystick(string csvData)
+    {
+        string[] values = csvData.Split(',');
+        if (values.Length == 3)
         {
             try
             {
-                // 아두이노가 보낸 문자열 한 줄을 읽음
-                string data = serialPort.ReadLine();
+                JoyX = float.Parse(values[0], CultureInfo.InvariantCulture);
+                JoyY = float.Parse(values[1], CultureInfo.InvariantCulture);
 
-                portData = data;
+                // 아두이노 INPUT_PULLUP: 0이 눌림(Low), 1이 안눌림(High)
+                int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
+                IsJoyPressed = (sw == 0); // 0이면 true(눌림)로 변환
             }
-            catch (System.TimeoutException)
-            {
-                // 타임아웃 로그는 원래 없었으므로 그대로 둡니다. (무시)
-            }
-            catch (System.Exception ex)
-            {
-                // "데이터 읽기 오류" 로그는 문제 발생 시 필요하므로 남겨둡니다.
-                Debug.LogWarning($"데이터 읽기 오류: {ex.Message}");
-            }
+            catch { }
         }
     }
 
+    // [Buttons] B1 1 (예: 키="B1", 값="1")
+    private void ProcessButtons(string key, string state)
+    {
+        // 아두이노 코드에서 눌렸을 때 "1", 안 눌렸을 때 "0"을 보내도록 수정했으므로:
+        bool isPressed = (state == "1");
 
-    
+        if (key == "B1") IsButton1Pressed = isPressed;
+        else if (key == "B2") IsButton2Pressed = isPressed;
+        else if (key == "B3") IsButton3Pressed = isPressed;
+    }
+
+
+    // ==========================================
+    // 7. 수학 계산 (Algorithm)
+    // ==========================================
+    private void CalculateComplementaryFilter(float gx, float gy, float ax, float ay, float az)
+    {
+        float accelRoll = Mathf.Atan2(ay, az) * Mathf.Rad2Deg;
+        float accelPitch = Mathf.Atan2(-ax, Mathf.Sqrt(ay * ay + az * az)) * Mathf.Rad2Deg;
+
+        float gyroPitch = CurrentPitch + (gx * Mathf.Rad2Deg * Time.deltaTime);
+        float gyroRoll = CurrentRoll + (gy * Mathf.Rad2Deg * Time.deltaTime);
+
+        CurrentPitch = (FilterWeight * gyroPitch) + ((1 - FilterWeight) * accelPitch);
+        CurrentRoll = (FilterWeight * gyroRoll) + ((1 - FilterWeight) * accelRoll);
+    }
 }
