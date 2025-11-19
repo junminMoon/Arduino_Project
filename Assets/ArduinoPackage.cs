@@ -184,4 +184,11 @@ public class ArduinoPackage : MonoBehaviour
         CurrentPitch = (FilterWeight * gyroPitch) + ((1 - FilterWeight) * accelPitch);
         CurrentRoll = (FilterWeight * gyroRoll) + ((1 - FilterWeight) * accelRoll);
     }
+
+    void Update()
+    {
+        Debug.Log("B1 : " + IsButton1Pressed);
+        Debug.Log("B2 : " + IsButton2Pressed);
+        Debug.Log("B2 : " + IsButton3Pressed);
+    }
 }
