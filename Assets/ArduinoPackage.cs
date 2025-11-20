@@ -112,6 +112,7 @@ public class ArduinoPackage : MonoBehaviour
             case "Y":
             case "B":
             case "A":
+            case "T":
                 ProcessButtons(key, value);
                 break;
         }
