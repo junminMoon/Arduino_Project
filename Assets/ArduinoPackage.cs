@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.IO.Ports;
 using System.Globalization;
+using System;
 
 public class ArduinoPackage : MonoBehaviour
 {
@@ -22,6 +23,7 @@ public class ArduinoPackage : MonoBehaviour
     public bool IsButton1Pressed { get; private set; }
     public bool IsButton2Pressed { get; private set; }
     public bool IsButton3Pressed { get; private set; }
+    public bool IsButton4Pressed { get; private set; }
 
 
     // ==========================================
@@ -164,9 +166,24 @@ public class ArduinoPackage : MonoBehaviour
         // 아두이노 코드에서 눌렸을 때 "1", 안 눌렸을 때 "0"을 보내도록 수정했으므로:
         bool isPressed = (state == "1");
 
-        if (key == "B1") IsButton1Pressed = isPressed;
-        else if (key == "B2") IsButton2Pressed = isPressed;
-        else if (key == "B3") IsButton3Pressed = isPressed;
+        if (key == "B1") 
+        {
+            IsButton1Pressed = isPressed;
+            Debug.Log("B1 is " + IsButton1Pressed);
+        }
+        else if (key == "B2")
+        {
+            IsButton2Pressed = isPressed;
+            Debug.Log("B2 is " + IsButton2Pressed);
+        }
+        else if (key == "B3"){
+            IsButton3Pressed = isPressed;
+            Debug.Log("B3 is " + IsButton3Pressed);
+        }
+        else if (key == "B4"){
+            IsButton4Pressed = isPressed;
+            Debug.Log("B4 is " + IsButton4Pressed);
+        }
     }
 
 
@@ -183,12 +200,5 @@ public class ArduinoPackage : MonoBehaviour
 
         CurrentPitch = (FilterWeight * gyroPitch) + ((1 - FilterWeight) * accelPitch);
         CurrentRoll = (FilterWeight * gyroRoll) + ((1 - FilterWeight) * accelRoll);
-    }
-
-    void Update()
-    {
-        Debug.Log("B1 : " + IsButton1Pressed);
-        Debug.Log("B2 : " + IsButton2Pressed);
-        Debug.Log("B2 : " + IsButton3Pressed);
     }
 }
