@@ -20,10 +20,10 @@ public class ArduinoPackage : MonoBehaviour
     public bool IsJoyPressed { get; private set; } // 조이스틱 버튼 눌림 여부
 
     // [Buttons] 버튼 상태 (X, Y, B, A)
-    public bool IsButton1Pressed { get; private set; }
-    public bool IsButton2Pressed { get; private set; }
-    public bool IsButton3Pressed { get; private set; }
-    public bool IsButton4Pressed { get; private set; }
+    public bool IsButtonXPressed { get; private set; }
+    public bool IsButtonYPressed { get; private set; }
+    public bool IsButtonBPressed { get; private set; }
+    public bool IsButtonAPressed { get; private set; }
     public bool IsTouchPressed { get; private set;}
 
 
@@ -170,19 +170,19 @@ public class ArduinoPackage : MonoBehaviour
 
         if (key == "X") 
         {
-            IsButton1Pressed = isPressed;
+            IsButtonXPressed = isPressed;
         }
         else if (key == "Y")
         {
-            IsButton2Pressed = isPressed;
+            IsButtonYPressed = isPressed;
         }
         else if (key == "B")
         {
-            IsButton3Pressed = isPressed;
+            IsButtonBPressed = isPressed;
         }
         else if (key == "A")
         {
-            IsButton4Pressed = isPressed;
+            IsButtonAPressed = isPressed;
         }
         else if (key == "T")
         {
