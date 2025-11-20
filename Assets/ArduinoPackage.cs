@@ -32,6 +32,7 @@ public class ArduinoPackage : MonoBehaviour
     // ==========================================
     private SerialPort serialPort;
     private const float FilterWeight = 0.98f;
+    public float deadZone = 0.15f;
 
 
     // ==========================================
@@ -152,8 +153,8 @@ public class ArduinoPackage : MonoBehaviour
         {
             try
             {
-                JoyX = -MapValue(float.Parse(values[0], CultureInfo.InvariantCulture));
-                JoyY = MapValue(float.Parse(values[1], CultureInfo.InvariantCulture));
+                JoyX = ApplyDeadzone(-MapValue(float.Parse(values[0], CultureInfo.InvariantCulture)));
+                JoyY = ApplyDeadzone(MapValue(float.Parse(values[1], CultureInfo.InvariantCulture)));
 
                 // 아두이노 INPUT_PULLUP: 0이 눌림(Low), 1이 안눌림(High)
                 int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
@@ -211,5 +212,23 @@ public class ArduinoPackage : MonoBehaviour
     {
         // (현재값 / 최대값) * 2 - 1
         return (value / 1023.0f) * 2.0f - 1.0f;
+    }
+
+    float ApplyDeadzone(float value)
+    {
+        // 절대값이 데드존보다 작으면 그냥 0으로 반환
+        if (Mathf.Abs(value) < deadZone)
+        {
+            return 0f;
+        }
+        else
+        {
+            // (선택사항) 데드존 바깥 값을 부드럽게 연결하고 싶다면 아래 공식 사용
+            // 데드존이 0.2일 때, 입력이 0.21이면 갑자기 값이 튀는 것을 방지함
+            return Mathf.Sign(value) * ((Mathf.Abs(value) - deadZone) / (1 - deadZone));
+            
+            // 단순히 떨림만 잡고 싶다면 그냥 원래 값 반환
+            // return value;
+        }
     }
 }
