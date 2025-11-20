@@ -22,7 +22,7 @@ public class DebugScene : MonoBehaviour
     {
         arduinoPackage.ReadSerialLoop();
         joystickTest.text = "JoyX : " + arduinoPackage.JoyX + "\nJoyY : " + arduinoPackage.JoyY + "\nJoyPressed : " + arduinoPackage.IsJoyPressed;
-        buttonTest.text = "B1 : " + arduinoPackage.IsButton1Pressed + "\nB2 : " + arduinoPackage.IsButton2Pressed + "\nB3 : " + arduinoPackage.IsButton3Pressed + "\nB4 : " + arduinoPackage.IsButton4Pressed;
+        buttonTest.text = "X : " + arduinoPackage.IsButton1Pressed + "\nY : " + arduinoPackage.IsButton2Pressed + "\nB : " + arduinoPackage.IsButton3Pressed + "\nA : " + arduinoPackage.IsButton4Pressed;
     }
 
     void OnApplicationQuit()

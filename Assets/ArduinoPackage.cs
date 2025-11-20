@@ -19,7 +19,7 @@ public class ArduinoPackage : MonoBehaviour
     public float JoyY { get; private set; }    // 0 ~ 1023
     public bool IsJoyPressed { get; private set; } // 조이스틱 버튼 눌림 여부
 
-    // [Buttons] 버튼 상태 (B1, B2, B3, B4)
+    // [Buttons] 버튼 상태 (X, Y, B, A)
     public bool IsButton1Pressed { get; private set; }
     public bool IsButton2Pressed { get; private set; }
     public bool IsButton3Pressed { get; private set; }
@@ -90,7 +90,7 @@ public class ArduinoPackage : MonoBehaviour
     // ==========================================
     private void DispatchData(string data)
     {
-        // 데이터 예시: "G ...", "J 512,512,0", "B1 1"
+        // 데이터 예시: "G ...", "J 512,512,0", "X 1"
         if (string.IsNullOrEmpty(data)) return;
 
         string[] parts = data.Split(' ');
@@ -107,10 +107,10 @@ public class ArduinoPackage : MonoBehaviour
             case "J": // 조이스틱 데이터 처리
                 ProcessJoystick(value);
                 break;
-            case "B1": // 버튼 1, 2, 3, 4 각각 처리
-            case "B2":
-            case "B3":
-            case "B4":
+            case "X": // 버튼 1, 2, 3, 4 각각 처리
+            case "Y":
+            case "B":
+            case "A":
                 ProcessButtons(key, value);
                 break;
         }
@@ -161,24 +161,26 @@ public class ArduinoPackage : MonoBehaviour
         }
     }
 
-    // [Buttons] B1 1 (예: 키="B1", 값="1")
+    // [Buttons] X 1 (예: 키="X", 값="1")
     private void ProcessButtons(string key, string state)
     {
         // 아두이노 코드에서 눌렸을 때 "1", 안 눌렸을 때 "0"을 보내도록 수정했으므로:
         bool isPressed = (state == "1");
 
-        if (key == "B1") 
+        if (key == "X") 
         {
             IsButton1Pressed = isPressed;
         }
-        else if (key == "B2")
+        else if (key == "Y")
         {
             IsButton2Pressed = isPressed;
         }
-        else if (key == "B3"){
+        else if (key == "B")
+        {
             IsButton3Pressed = isPressed;
         }
-        else if (key == "B4"){
+        else if (key == "A")
+        {
             IsButton4Pressed = isPressed;
         }
     }
