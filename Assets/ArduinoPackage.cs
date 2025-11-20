@@ -152,6 +152,8 @@ public class ArduinoPackage : MonoBehaviour
             {
                 JoyX = float.Parse(values[0], CultureInfo.InvariantCulture);
                 JoyY = float.Parse(values[1], CultureInfo.InvariantCulture);
+                JoyX = MapValue(JoyX);
+                JoyY = MapValue(JoyY);
 
                 // 아두이노 INPUT_PULLUP: 0이 눌림(Low), 1이 안눌림(High)
                 int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
@@ -199,5 +201,11 @@ public class ArduinoPackage : MonoBehaviour
 
         CurrentPitch = (FilterWeight * gyroPitch) + ((1 - FilterWeight) * accelPitch);
         CurrentRoll = (FilterWeight * gyroRoll) + ((1 - FilterWeight) * accelRoll);
+    }
+
+    float MapValue(float value)
+    {
+        // (현재값 / 최대값) * 2 - 1
+        return (value / 1023.0f) * 2.0f - 1.0f;
     }
 }
