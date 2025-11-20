@@ -11,6 +11,7 @@ public class DebugScene : MonoBehaviour
     
     public TextMeshProUGUI joystickTest;
     public TextMeshProUGUI buttonTest;
+    public TextMeshProUGUI touchTest;
     void Start()
     {
         arduinoPackage = new ArduinoPackage();
@@ -23,6 +24,7 @@ public class DebugScene : MonoBehaviour
         arduinoPackage.ReadSerialLoop();
         joystickTest.text = "JoyX : " + arduinoPackage.JoyX + "\nJoyY : " + arduinoPackage.JoyY + "\nJoyPressed : " + arduinoPackage.IsJoyPressed;
         buttonTest.text = "X : " + arduinoPackage.IsButton1Pressed + "\nY : " + arduinoPackage.IsButton2Pressed + "\nB : " + arduinoPackage.IsButton3Pressed + "\nA : " + arduinoPackage.IsButton4Pressed;
+        touchTest.text = "Touch : " + arduinoPackage.IsTouchPressed;
     }
 
     void OnApplicationQuit()

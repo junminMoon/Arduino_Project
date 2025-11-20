@@ -24,6 +24,7 @@ public class ArduinoPackage : MonoBehaviour
     public bool IsButton2Pressed { get; private set; }
     public bool IsButton3Pressed { get; private set; }
     public bool IsButton4Pressed { get; private set; }
+    public bool IsTouchPressed { get; private set;}
 
 
     // ==========================================
@@ -182,6 +183,10 @@ public class ArduinoPackage : MonoBehaviour
         else if (key == "A")
         {
             IsButton4Pressed = isPressed;
+        }
+        else if (key == "T")
+        {
+            IsTouchPressed = isPressed;
         }
     }
 
