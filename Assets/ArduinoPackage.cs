@@ -110,6 +110,7 @@ public class ArduinoPackage : MonoBehaviour
             case "B1": // 버튼 1, 2, 3 각각 처리
             case "B2":
             case "B3":
+            case "B4":
                 ProcessButtons(key, value);
                 break;
         }
@@ -151,10 +152,11 @@ public class ArduinoPackage : MonoBehaviour
             {
                 JoyX = float.Parse(values[0], CultureInfo.InvariantCulture);
                 JoyY = float.Parse(values[1], CultureInfo.InvariantCulture);
-
+                Debug.Log("JoyX : "+JoyX + ", JoyY : " + JoyY);
                 // 아두이노 INPUT_PULLUP: 0이 눌림(Low), 1이 안눌림(High)
                 int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
                 IsJoyPressed = (sw == 0); // 0이면 true(눌림)로 변환
+                Debug.Log("J is " + IsJoyPressed);
             }
             catch { }
         }
