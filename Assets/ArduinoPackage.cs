@@ -223,12 +223,8 @@ public class ArduinoPackage : MonoBehaviour
         }
         else
         {
-            // (선택사항) 데드존 바깥 값을 부드럽게 연결하고 싶다면 아래 공식 사용
             // 데드존이 0.2일 때, 입력이 0.21이면 갑자기 값이 튀는 것을 방지함
             return Mathf.Sign(value) * ((Mathf.Abs(value) - deadZone) / (1 - deadZone));
-            
-            // 단순히 떨림만 잡고 싶다면 그냥 원래 값 반환
-            // return value;
         }
     }
 }
