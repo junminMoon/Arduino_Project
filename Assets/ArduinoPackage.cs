@@ -19,7 +19,7 @@ public class ArduinoPackage : MonoBehaviour
     public float JoyY { get; private set; }    // 0 ~ 1023
     public bool IsJoyPressed { get; private set; } // 조이스틱 버튼 눌림 여부
 
-    // [Buttons] 버튼 상태 (B1, B2, B3)
+    // [Buttons] 버튼 상태 (B1, B2, B3, B4)
     public bool IsButton1Pressed { get; private set; }
     public bool IsButton2Pressed { get; private set; }
     public bool IsButton3Pressed { get; private set; }
@@ -107,7 +107,7 @@ public class ArduinoPackage : MonoBehaviour
             case "J": // 조이스틱 데이터 처리
                 ProcessJoystick(value);
                 break;
-            case "B1": // 버튼 1, 2, 3 각각 처리
+            case "B1": // 버튼 1, 2, 3, 4 각각 처리
             case "B2":
             case "B3":
             case "B4":
@@ -152,11 +152,10 @@ public class ArduinoPackage : MonoBehaviour
             {
                 JoyX = float.Parse(values[0], CultureInfo.InvariantCulture);
                 JoyY = float.Parse(values[1], CultureInfo.InvariantCulture);
-                Debug.Log("JoyX : "+JoyX + ", JoyY : " + JoyY);
+
                 // 아두이노 INPUT_PULLUP: 0이 눌림(Low), 1이 안눌림(High)
                 int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
                 IsJoyPressed = (sw == 0); // 0이면 true(눌림)로 변환
-                Debug.Log("J is " + IsJoyPressed);
             }
             catch { }
         }
@@ -171,20 +170,16 @@ public class ArduinoPackage : MonoBehaviour
         if (key == "B1") 
         {
             IsButton1Pressed = isPressed;
-            Debug.Log("B1 is " + IsButton1Pressed);
         }
         else if (key == "B2")
         {
             IsButton2Pressed = isPressed;
-            Debug.Log("B2 is " + IsButton2Pressed);
         }
         else if (key == "B3"){
             IsButton3Pressed = isPressed;
-            Debug.Log("B3 is " + IsButton3Pressed);
         }
         else if (key == "B4"){
             IsButton4Pressed = isPressed;
-            Debug.Log("B4 is " + IsButton4Pressed);
         }
     }
 
