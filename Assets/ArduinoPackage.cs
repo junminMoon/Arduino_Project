@@ -152,7 +152,7 @@ public class ArduinoPackage : MonoBehaviour
         {
             try
             {
-                JoyX = MapValue(float.Parse(values[0], CultureInfo.InvariantCulture));
+                JoyX = -MapValue(float.Parse(values[0], CultureInfo.InvariantCulture));
                 JoyY = MapValue(float.Parse(values[1], CultureInfo.InvariantCulture));
 
                 // 아두이노 INPUT_PULLUP: 0이 눌림(Low), 1이 안눌림(High)
