@@ -64,6 +64,21 @@ public class DebugSceneTEMP : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha4)) arduinoPackage.SendSerialData("S 4");
     }
 
+    public void OnClickSound(int soundId)
+    {
+        if (arduinoPackage != null && arduinoPackage.IsConnected)
+        {
+            string command = "S " + soundId;
+            arduinoPackage.SendSerialData(command);
+
+            Debug.Log($"[UI] 소리 버튼 클릭: {command}");
+        }
+        else
+        {
+            Debug.LogWarning("아두이노가 연결되지 않았습니다!");
+        }
+    }
+
     void OnApplicationQuit()
     {
         if (arduinoPackage != null)
