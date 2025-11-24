@@ -4,27 +4,64 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 
-public class DebugSceneTemp : MonoBehaviour
+public class DebugSceneTEMP : MonoBehaviour
 {
-    // Start is called before the first frame update
-    ArduinoPackage arduinoPackage;
-    
+
     public TextMeshProUGUI joystickTest;
     public TextMeshProUGUI buttonTest;
     public TextMeshProUGUI touchTest;
+    public TextMeshProUGUI gyroTest;
+
+    public ArduinoPackageTEMP arduinoPackage;
+
     void Start()
     {
-        arduinoPackage = new ArduinoPackage();
-        arduinoPackage.Connect();
+        if (arduinoPackage == null)
+        {
+            arduinoPackage = FindObjectOfType<ArduinoPackageTEMP>();
+        }
+
+        if (arduinoPackage != null)
+        {
+            arduinoPackage.Connect(); // 연결 시작!
+        }
+        else
+        {
+            Debug.LogError("씬에 'ArduinoPackageTEMP' 스크립트가 붙은 오브젝트가 없습니다!");
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
+        if (arduinoPackage == null) return;
+
+        // 1. 데이터 읽기 명령 (Listener 방식)
         arduinoPackage.ReadSerialLoop();
-        joystickTest.text = "JoyX : " + arduinoPackage.JoyX + "\nJoyY : " + arduinoPackage.JoyY + "\nJoyPressed : " + arduinoPackage.IsJoyPressed;
-        buttonTest.text = "X : " + arduinoPackage.IsButtonXPressed + "\nY : " + arduinoPackage.IsButtonYPressed + "\nB : " + arduinoPackage.IsButtonBPressed + "\nA : " + arduinoPackage.IsButtonAPressed;
-        touchTest.text = "Touch : " + arduinoPackage.IsTouchPressed;
+
+        // 2. UI 텍스트 갱신
+        if (arduinoPackage.IsConnected)
+        {
+            joystickTest.text = $"JoyX : {arduinoPackage.JoyX:F2}\nJoyY : {arduinoPackage.JoyY:F2}\nJoyPressed : {arduinoPackage.IsJoyPressed}";
+
+            buttonTest.text = $"X : {arduinoPackage.IsButtonXPressed}\nY : {arduinoPackage.IsButtonYPressed}\nB : {arduinoPackage.IsButtonBPressed}\nA : {arduinoPackage.IsButtonAPressed}";
+
+            touchTest.text = $"Touch : {arduinoPackage.IsTouchPressed}";
+
+            // 6축 RAW 데이터 + 계산된 각도 표시
+            gyroTest.text = $"Gyro\nX :{arduinoPackage.RawGyroX:F2}\nY : {arduinoPackage.RawGyroY:F2}\nZ : {arduinoPackage.RawGyroZ:F2}\n" +
+                            $"Accel\nX : {arduinoPackage.RawAccelX:F2}\nY:{arduinoPackage.RawAccelY:F2}\nZ:{arduinoPackage.RawAccelZ:F2}\n" +
+                            $"Angle\nPitch : {arduinoPackage.CurrentPitch:F1}\nRoll : {arduinoPackage.CurrentRoll:F1}\n";
+        }
+        else
+        {
+            gyroTest.text = "Disconnected...";
+        }
+
+        // 3. 소리 전송 테스트 (키보드 1~4)
+        if (Input.GetKeyDown(KeyCode.Alpha1)) arduinoPackage.SendSerialData("S 1");
+        if (Input.GetKeyDown(KeyCode.Alpha2)) arduinoPackage.SendSerialData("S 2");
+        if (Input.GetKeyDown(KeyCode.Alpha3)) arduinoPackage.SendSerialData("S 3");
+        if (Input.GetKeyDown(KeyCode.Alpha4)) arduinoPackage.SendSerialData("S 4");
     }
 
     void OnApplicationQuit()
