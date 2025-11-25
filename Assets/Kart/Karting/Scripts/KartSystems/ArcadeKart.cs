@@ -320,6 +320,8 @@ namespace KartGame.KartSystems
                 if (arduinoPackage != null)
                 {
                     MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
+                    MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
+                    Debug.Log(arduinoPackage.IsButtonAPressed);
                 }
                 else
                 {
