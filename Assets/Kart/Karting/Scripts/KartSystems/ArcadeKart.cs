@@ -7,6 +7,8 @@ namespace KartGame.KartSystems
 {
     public class ArcadeKart : MonoBehaviour
     {
+        private ArduinoPackageKart arduinoPackage;
+
         [System.Serializable]
         public class StatPowerup
         {
@@ -312,7 +314,7 @@ namespace KartGame.KartSystems
             // apply vehicle physics
             if (m_CanMove)
             {
-                MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
+                MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
             }
             GroundAirbourne();
 
@@ -331,7 +333,7 @@ namespace KartGame.KartSystems
             for (int i = 0; i < m_Inputs.Length; i++)
             {
                 Input = m_Inputs[i].GenerateInput();
-                WantsToDrift = Input.Brake && Vector3.Dot(Rigidbody.velocity, transform.forward) > 0.0f;
+                WantsToDrift = arduinoPackage.IsButtonBPressed && Vector3.Dot(Rigidbody.velocity, transform.forward) > 0.0f;
             }
         }
 
@@ -393,7 +395,7 @@ namespace KartGame.KartSystems
             else
             {
                 // use this value to play kart sound when it is waiting the race start countdown.
-                return Input.Accelerate ? 1.0f : 0.0f;
+                return arduinoPackage.IsButtonAPressed ? 1.0f : 0.0f;
             }
         }
 
