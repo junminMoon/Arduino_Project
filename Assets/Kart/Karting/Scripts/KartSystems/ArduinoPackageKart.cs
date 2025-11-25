@@ -4,7 +4,7 @@ using System.Globalization;
 using System;
 
 
-public class ArduinoPackage : MonoBehaviour
+public class ArduinoPackageKart : MonoBehaviour
 {
     // ==========================================
     // 1. 인스펙터 설정 (Inspector Settings)

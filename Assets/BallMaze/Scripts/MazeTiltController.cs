@@ -9,8 +9,7 @@ public class MazeTiltController : MonoBehaviour
 
     void Start()
     {
-        arduinoPackage = new ArduinoPackage();
-
+        arduinoPackage = FindObjectOfType<ArduinoPackage>();
         arduinoPackage.Connect();
     }
 
