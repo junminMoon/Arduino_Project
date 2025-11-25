@@ -237,6 +237,9 @@ namespace KartGame.KartSystems
         {
             Rigidbody = GetComponent<Rigidbody>();
             m_Inputs = GetComponents<IInput>();
+            arduinoPackage = FindObjectOfType<ArduinoPackageKart>();
+
+            arduinoPackage.Connect();
 
             UpdateSuspensionParams(FrontLeftWheel);
             UpdateSuspensionParams(FrontRightWheel);
@@ -314,7 +317,14 @@ namespace KartGame.KartSystems
             // apply vehicle physics
             if (m_CanMove)
             {
-                MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
+                if (arduinoPackage != null)
+                {
+                    MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
+                }
+                else
+                {
+                    MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
+                }
             }
             GroundAirbourne();
 
@@ -333,9 +343,17 @@ namespace KartGame.KartSystems
             for (int i = 0; i < m_Inputs.Length; i++)
             {
                 Input = m_Inputs[i].GenerateInput();
-                WantsToDrift = arduinoPackage.IsButtonBPressed && Vector3.Dot(Rigidbody.velocity, transform.forward) > 0.0f;
+                if (arduinoPackage != null)
+                {
+                    WantsToDrift = arduinoPackage.IsButtonBPressed && Vector3.Dot(Rigidbody.velocity, transform.forward) > 0.0f;
+                }
+                else
+                {
+                    WantsToDrift = Input.Brake && Vector3.Dot(Rigidbody.velocity, transform.forward) > 0.0f;
+                }
             }
         }
+        
 
         void TickPowerups()
         {
@@ -597,6 +615,13 @@ namespace KartGame.KartSystems
             }
 
             ActivateDriftVFX(IsDrifting && GroundPercent > 0.0f);
+        }
+        void OnApplicationQuit()
+        {
+            if (arduinoPackage != null)
+            {
+                arduinoPackage.Disconnect();
+            }
         }
     }
 }
