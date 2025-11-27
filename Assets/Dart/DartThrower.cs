@@ -49,6 +49,8 @@ public class DartThrower : MonoBehaviour
     {
         if (arduinoPackage == null) return;
 
+        arduinoPackage.ReadSerialLoop();
+        
         UpdateGrippingState();
 
         // 3. 그립 중인 경우에만 조준 및 던지기 감지

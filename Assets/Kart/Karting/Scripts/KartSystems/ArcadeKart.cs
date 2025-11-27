@@ -239,7 +239,12 @@ namespace KartGame.KartSystems
             m_Inputs = GetComponents<IInput>();
             arduinoPackage = FindObjectOfType<ArduinoPackageKart>();
 
-            arduinoPackage.Connect();
+            if (arduinoPackage != null)
+            {
+                arduinoPackage.Connect();
+            }
+            
+            arduinoPackage.ReadSerialLoop();
 
             UpdateSuspensionParams(FrontLeftWheel);
             UpdateSuspensionParams(FrontRightWheel);
