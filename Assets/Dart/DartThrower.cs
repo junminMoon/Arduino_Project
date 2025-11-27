@@ -91,6 +91,7 @@ public class DartThrower : MonoBehaviour
     void UpdateGrippingState()
     {
         bool touchPressed = arduinoPackage.IsTouchPressed;
+        Debug.Log(arduinoPackage.IsTouchPressed);
 
         if (touchPressed && !isGripping && isReadyToThrow)
         {
