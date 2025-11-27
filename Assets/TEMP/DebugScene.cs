@@ -27,7 +27,7 @@ public class DebugScene : MonoBehaviour
         }
         else
         {
-            Debug.LogError("씬에 'ArduinoPackageTEMP' 스크립트가 붙은 오브젝트가 없습니다!");
+            Debug.LogError("씬에 'ArduinoPackage' 스크립트가 붙은 오브젝트가 없습니다!");
         }
     }
 
