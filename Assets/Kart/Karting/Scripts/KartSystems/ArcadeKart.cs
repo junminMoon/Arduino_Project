@@ -223,6 +223,11 @@ namespace KartGame.KartSystems
             }
         }
 
+        void Update()
+        {
+          arduinoPackage.ReadSerialLoop();  
+        }
+
         void UpdateSuspensionParams(WheelCollider wheel)
         {
             wheel.suspensionDistance = SuspensionHeight;
@@ -243,8 +248,8 @@ namespace KartGame.KartSystems
             {
                 arduinoPackage.Connect();
             }
+
             
-            arduinoPackage.ReadSerialLoop();
 
             UpdateSuspensionParams(FrontLeftWheel);
             UpdateSuspensionParams(FrontRightWheel);
