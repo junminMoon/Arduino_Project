@@ -48,7 +48,7 @@ public class ArduinoPackage : MonoBehaviour
     public bool IsButtonAPressed { get; private set; }
     public bool IsTouchPressed { get; private set; }
 
-    // 내부 변수
+
     private SerialPort serialPort;
 
     // ==========================================
@@ -92,9 +92,24 @@ public class ArduinoPackage : MonoBehaviour
     // ==========================================
     // 4. 메인 루프 (외부에서 호출)
     // ==========================================
+
+    private float lastPingTime = 0f;
+    private const float PingInterval = 1.0f; // 1초 간격
     public void ReadSerialLoop()
     {
         if (!IsConnected || serialPort == null || !serialPort.IsOpen) return;
+
+
+        if (Time.time - lastPingTime > PingInterval)
+        {
+            try
+            {
+                serialPort.WriteLine("P"); 
+                lastPingTime = Time.time;
+            }
+            catch { /* 전송 에러 무시 */ }
+        }
+        // ---------------------------------------------------------
 
         try
         {
