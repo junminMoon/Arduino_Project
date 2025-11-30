@@ -57,11 +57,6 @@ public class DebugScene : MonoBehaviour
             gyroTest.text = "Disconnected...";
         }
 
-        // 3. 소리 전송 테스트 (키보드 1~4)
-        if (Input.GetKeyDown(KeyCode.Alpha1)) arduinoPackage.SendSerialData("S 1");
-        if (Input.GetKeyDown(KeyCode.Alpha2)) arduinoPackage.SendSerialData("S 2");
-        if (Input.GetKeyDown(KeyCode.Alpha3)) arduinoPackage.SendSerialData("S 3");
-        if (Input.GetKeyDown(KeyCode.Alpha4)) arduinoPackage.SendSerialData("S 4");
     }
 
     public void OnClickSound(int soundId)
@@ -72,6 +67,20 @@ public class DebugScene : MonoBehaviour
             arduinoPackage.SendSerialData(command);
 
             Debug.Log($"[UI] 소리 버튼 클릭: {command}");
+        }
+        else
+        {
+            Debug.LogWarning("아두이노가 연결되지 않았습니다!");
+        }
+    }
+    public void OnClickVibration(int vibId)
+    {
+        if (arduinoPackage != null && arduinoPackage.IsConnected)
+        {
+            string command = "V " + vibId;
+            arduinoPackage.SendSerialData(command);
+
+            Debug.Log($"[Vibration Test] 전송함: {command}");
         }
         else
         {

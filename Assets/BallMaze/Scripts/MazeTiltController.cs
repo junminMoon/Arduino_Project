@@ -28,10 +28,11 @@ public class MazeTiltController : MonoBehaviour
 
     void ApplyRotation(float pitch, float roll)
     {
+
         pitch = Mathf.Clamp(pitch, -maxAngle, maxAngle);
         roll = Mathf.Clamp(roll, -maxAngle, maxAngle);
 
-        Quaternion targetRotation = Quaternion.Euler(pitch, 0, roll);
+        Quaternion targetRotation = Quaternion.Euler(roll, 0, pitch);
 
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
     }

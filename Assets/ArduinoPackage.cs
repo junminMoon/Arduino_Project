@@ -16,6 +16,7 @@ public class ArduinoPackage : MonoBehaviour
     [Header("설정 (Settings)")]
     [SerializeField] private float filterWeight = 0.98f;
     [SerializeField] private float deadZone = 0.15f;
+    [SerializeField] private float angleDeadzone = 5.0f; // ◀️ 핵심!
 
 
     // ==========================================
@@ -49,7 +50,6 @@ public class ArduinoPackage : MonoBehaviour
 
     // 내부 변수
     private SerialPort serialPort;
-
 
     // ==========================================
     // 3. 연결 및 해제 (Connection)
@@ -148,11 +148,9 @@ public class ArduinoPackage : MonoBehaviour
             float ay = float.Parse(values[4], CultureInfo.InvariantCulture);
             float az = float.Parse(values[5], CultureInfo.InvariantCulture);
 
-            // RAW 데이터 저장 (디버그용)
             RawGyroX = gx; RawGyroY = gy; RawGyroZ = gz;
             RawAccelX = ax; RawAccelY = ay; RawAccelZ = az;
 
-            // 상보 필터 계산
             CalculateComplementaryFilter(gx, gy, ax, ay, az);
         }
         catch { }
@@ -190,16 +188,76 @@ public class ArduinoPackage : MonoBehaviour
     // ==========================================
     // 6. 계산 및 유틸리티
     // ==========================================
+
+    private const float ArduinoDt = 0.2f; // 아두이노 전송 주기 (0.2초)
+
+    // 내부 변수
+    private float _calcPitch;
+    private float _calcRoll;
+    private float pitchOffset = 0f;
+    private float rollOffset = 0f;
+
+    // 자이로 오차 보정 변수
+    private float gyroXOffset = 0f;
+    private float gyroYOffset = 0f;
+    private float gyroZOffset = 0f;
+
+    private bool isFirstSample = true;
+
     private void CalculateComplementaryFilter(float gx, float gy, float ax, float ay, float az)
     {
-        float accelRoll = Mathf.Atan2(ay, az) * Mathf.Rad2Deg;
-        float accelPitch = Mathf.Atan2(-ax, Mathf.Sqrt(ay * ay + az * az)) * Mathf.Rad2Deg;
 
-        float gyroPitch = CurrentPitch + (gx * Mathf.Rad2Deg * Time.deltaTime);
-        float gyroRoll = CurrentRoll + (gy * Mathf.Rad2Deg * Time.deltaTime);
+        // Roll (좌우) 계산에 X축(ax) 사용
+        float accelRoll = Mathf.Atan2(ax, az) * Mathf.Rad2Deg;
 
-        CurrentPitch = (filterWeight * gyroPitch) + ((1 - filterWeight) * accelPitch);
-        CurrentRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
+        // Pitch (앞뒤) 계산에 Y축(ay) 사용
+        float accelPitch = Mathf.Atan2(-ay, Mathf.Sqrt(ax * ax + az * az)) * Mathf.Rad2Deg;
+
+        // -----------------------------------------------------------
+        // [2] 필터링 및 적분 (속도 문제 해결)
+        // -----------------------------------------------------------
+        if (isFirstSample)
+        {
+            _calcPitch = accelPitch;
+            _calcRoll = accelRoll;
+
+            // 시작하자마자 영점 잡기 (Offset 설정)
+            pitchOffset = accelPitch;
+            rollOffset = accelRoll;
+
+            // 자이로 오차도 잡기
+            gyroXOffset = gx;
+            gyroYOffset = gy;
+
+            isFirstSample = false;
+        }
+        else
+        {
+            // 자이로 값 보정 (오차 빼기)
+            float fixedGx = gx - gyroXOffset;
+            float fixedGy = gy - gyroYOffset;
+
+            float gyroPitch = _calcPitch + (fixedGy * Mathf.Rad2Deg * ArduinoDt);
+            float gyroRoll = _calcRoll + (fixedGx * Mathf.Rad2Deg * ArduinoDt);
+
+            _calcPitch = (filterWeight * gyroPitch) + ((1 - filterWeight) * accelPitch);
+            _calcRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
+        }
+
+        // 4. 최종 출력
+        CurrentPitch = _calcPitch - pitchOffset;
+        CurrentPitch *= -1;
+        CurrentRoll = _calcRoll - rollOffset;
+    }
+
+    // 수동 보정 함수 (C키)
+    public void CalibrateSensor()
+    {
+        pitchOffset = _calcPitch;
+        rollOffset = _calcRoll;
+        gyroXOffset = RawGyroX;
+        gyroYOffset = RawGyroY;
+        Debug.Log("영점 조절 완료!");
     }
 
     private float MapValue(float value) => (value / 1023.0f) * 2.0f - 1.0f;
