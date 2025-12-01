@@ -265,6 +265,7 @@ public class ArduinoPackage : MonoBehaviour
         }
 
         CurrentPitch = _calcPitch - pitchOffset;
+        CurrentPitch *= -1;
         CurrentRoll = _calcRoll - rollOffset;
     }
 
@@ -275,7 +276,6 @@ public class ArduinoPackage : MonoBehaviour
         gyroXOffset = RawGyroX;
         gyroYOffset = RawGyroY;
         gyroZOffset = RawGyroZ;
-        Debug.Log("영점 조절 완료!");
     }
 
     private float MapValue(float value) => (value / 1023.0f) * 2.0f - 1.0f;

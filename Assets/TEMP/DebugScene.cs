@@ -46,7 +46,7 @@ public class DebugScene : MonoBehaviour
             // ---------------------------------------------------------
             // ★ [추가] 현재 연결 모드 및 포트 정보 표시
             // ---------------------------------------------------------
-            string mode = arduinoPackage.useUsbMode ? "<color=yellow>[Wired USB]</color>" : "<color=cyan>[Wireless BT]</color>";
+            string mode = arduinoPackage.useUsbMode ? "<color=yellow>[Wired USB]</color>" : "<color=yellow>[Wireless BT]</color>";
             infoText.text = $"{mode}\nPort: {arduinoPackage.CurrentPortName}\nBaud: {arduinoPackage.CurrentBaudRate}";
 
 
