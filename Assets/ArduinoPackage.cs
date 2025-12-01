@@ -3,20 +3,25 @@ using System.IO.Ports;
 using System.Globalization;
 using System;
 
-
 public class ArduinoPackage : MonoBehaviour
 {
     // ==========================================
     // 1. 인스펙터 설정 (Inspector Settings)
     // ==========================================
-    [Header("통신 설정 (Communication)")]
-    [SerializeField] private string portName = "COM8";
-    [SerializeField] private int baudRate = 9600;
+    [Header("모드 선택 (Mode Selection)")]
+    public bool useUsbMode = false; 
 
-    [Header("설정 (Settings)")]
-    [SerializeField] private float filterWeight = 0.98f;
+    [Header("블루투스 설정 (Wireless)")]
+    [SerializeField] private string btPortName = "COM8"; // 블루투스 포트
+    [SerializeField] private int btBaudRate = 9600;      // 블루투스 속도
+
+    [Header("유선 USB 설정 (Wired)")]
+    [SerializeField] private string usbPortName = "COM5"; // USB 포트 
+    [SerializeField] private int usbBaudRate = 115200;    // USB 속도 
+
+    [Header("필터 및 보정 설정")]
+    [SerializeField] private float filterWeight = 0.90f; // (0.9 추천)
     [SerializeField] private float deadZone = 0.15f;
-    [SerializeField] private float angleDeadzone = 5.0f; // ◀️ 핵심!
 
 
     // ==========================================
@@ -24,11 +29,15 @@ public class ArduinoPackage : MonoBehaviour
     // ==========================================
     public bool IsConnected { get; private set; }
 
-    // [MPU6050] 가공된 기울기 (상보 필터 적용)
+    // 현재 연결된 모드 정보 (디버깅용)
+    public string CurrentPortName { get; private set; }
+    public int CurrentBaudRate { get; private set; }
+
+    // [MPU6050]
     public float CurrentPitch { get; private set; }
     public float CurrentRoll { get; private set; }
 
-    // [MPU6050] 디버그용 RAW 데이터 (6축)
+    // RAW Data
     public float RawGyroX { get; private set; }
     public float RawGyroY { get; private set; }
     public float RawGyroZ { get; private set; }
@@ -48,28 +57,55 @@ public class ArduinoPackage : MonoBehaviour
     public bool IsButtonAPressed { get; private set; }
     public bool IsTouchPressed { get; private set; }
 
-
+    // 내부 변수
     private SerialPort serialPort;
+    private float _calcPitch, _calcRoll;
+    private float pitchOffset = 0f, rollOffset = 0f;
+    private float gyroXOffset = 0f, gyroYOffset = 0f, gyroZOffset = 0f;
+    private bool isFirstSample = true;
+
+    // 핑 전송 타이머
+    private float lastPingTime = 0f;
+    private const float PingInterval = 1.0f;
+    private const float ArduinoDt = 0.2f; // 전송 주기
+
 
     // ==========================================
-    // 3. 연결 및 해제 (Connection)
+    // 3. 연결 및 해제 (수정됨!)
     // ==========================================
     public void Connect()
     {
-        if (IsConnected) return; // 이미 연결되어 있으면 패스
+        if (IsConnected) return;
+
+        // ★ 모드에 따라 포트와 속도 자동 선택
+        if (useUsbMode)
+        {
+            CurrentPortName = usbPortName;
+            CurrentBaudRate = usbBaudRate;
+        }
+        else
+        {
+            CurrentPortName = btPortName;
+            CurrentBaudRate = btBaudRate;
+        }
 
         try
         {
-            serialPort = new SerialPort(portName, baudRate);
-            serialPort.ReadTimeout = 50;
+            serialPort = new SerialPort(CurrentPortName, CurrentBaudRate);
+            serialPort.ReadTimeout = 10;
             serialPort.Open();
             IsConnected = true;
-            Debug.Log($"<color=green>아두이노 연결 성공! ({portName})</color>");
+
+            // 연결 성공 시 초기화
+            isFirstSample = true;
+            _calcPitch = 0f; _calcRoll = 0f;
+
+            Debug.Log($"<color=green>아두이노 연결 성공! [{CurrentPortName} @ {CurrentBaudRate}]</color>");
         }
         catch (System.Exception ex)
         {
             IsConnected = false;
-            Debug.LogError($"<color=red>아두이노 연결 실패: {ex.Message}</color>");
+            Debug.LogError($"<color=red>연결 실패 ({CurrentPortName}): {ex.Message}</color>");
         }
     }
 
@@ -82,7 +118,6 @@ public class ArduinoPackage : MonoBehaviour
         }
     }
 
-    // 앱이 꺼질 때 자동으로 연결 해제 (안전장치)
     void OnApplicationQuit()
     {
         Disconnect();
@@ -90,42 +125,35 @@ public class ArduinoPackage : MonoBehaviour
 
 
     // ==========================================
-    // 4. 메인 루프 (외부에서 호출)
+    // 4. 메인 루프
     // ==========================================
-
-    private float lastPingTime = 0f;
-    private const float PingInterval = 1.0f; // 1초 간격
     public void ReadSerialLoop()
     {
         if (!IsConnected || serialPort == null || !serialPort.IsOpen) return;
 
-
+        // ★ [추가됨] 1. 핑(Ping) 전송 (1초마다) - 아두이노 깨우기!
         if (Time.time - lastPingTime > PingInterval)
         {
             try
             {
-                serialPort.WriteLine("P"); 
+                serialPort.WriteLine("P");
                 lastPingTime = Time.time;
             }
-            catch { /* 전송 에러 무시 */ }
+            catch { /* 무시 */ }
         }
-        // ---------------------------------------------------------
 
+        // 2. 데이터 수신
         try
         {
             string rawData = serialPort.ReadLine();
             DispatchData(rawData);
         }
         catch (System.TimeoutException) { }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"데이터 오류: {ex.Message}");
-        }
+        catch (System.Exception ex) { Debug.LogWarning($"데이터 오류: {ex.Message}"); }
     }
 
-
     // ==========================================
-    // 5. 데이터 처리 로직 (Parsing Logic)
+    // 5. 데이터 분류 및 처리
     // ==========================================
     private void DispatchData(string data)
     {
@@ -171,6 +199,7 @@ public class ArduinoPackage : MonoBehaviour
         catch { }
     }
 
+    // ... (ProcessJoystick, ProcessButtons 함수는 기존과 동일) ...
     private void ProcessJoystick(string csvData)
     {
         string[] values = csvData.Split(',');
@@ -182,7 +211,6 @@ public class ArduinoPackage : MonoBehaviour
                 float rawY = float.Parse(values[1], CultureInfo.InvariantCulture);
                 JoyX = ApplyDeadzone(-MapValue(rawX));
                 JoyY = ApplyDeadzone(MapValue(rawY));
-
                 int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
                 IsJoyPressed = (sw == 0);
             }
@@ -200,58 +228,35 @@ public class ArduinoPackage : MonoBehaviour
         else if (key == "T") IsTouchPressed = isPressed;
     }
 
+
     // ==========================================
-    // 6. 계산 및 유틸리티
+    // 7. 계산 및 유틸리티
     // ==========================================
-
-    private const float ArduinoDt = 0.2f; // 아두이노 전송 주기 (0.2초)
-
-    // 내부 변수
-    private float _calcPitch;
-    private float _calcRoll;
-    private float pitchOffset = 0f;
-    private float rollOffset = 0f;
-
-    // 자이로 오차 보정 변수
-    private float gyroXOffset = 0f;
-    private float gyroYOffset = 0f;
-    private float gyroZOffset = 0f;
-
-    private bool isFirstSample = true;
-
     private void CalculateComplementaryFilter(float gx, float gy, float ax, float ay, float az)
     {
-
-        // Roll (좌우) 계산에 X축(ax) 사용
+        // [축 교체 및 방향 보정]
         float accelRoll = Mathf.Atan2(ax, az) * Mathf.Rad2Deg;
-
-        // Pitch (앞뒤) 계산에 Y축(ay) 사용
         float accelPitch = Mathf.Atan2(-ay, Mathf.Sqrt(ax * ax + az * az)) * Mathf.Rad2Deg;
 
-        // -----------------------------------------------------------
-        // [2] 필터링 및 적분 (속도 문제 해결)
-        // -----------------------------------------------------------
         if (isFirstSample)
         {
             _calcPitch = accelPitch;
             _calcRoll = accelRoll;
-
-            // 시작하자마자 영점 잡기 (Offset 설정)
             pitchOffset = accelPitch;
             rollOffset = accelRoll;
 
-            // 자이로 오차도 잡기
             gyroXOffset = gx;
             gyroYOffset = gy;
+            // gyroZOffset = gz; 
 
             isFirstSample = false;
         }
         else
         {
-            // 자이로 값 보정 (오차 빼기)
             float fixedGx = gx - gyroXOffset;
             float fixedGy = gy - gyroYOffset;
 
+            // 축 교체 적용 (gy -> Pitch, gx -> Roll)
             float gyroPitch = _calcPitch + (fixedGy * Mathf.Rad2Deg * ArduinoDt);
             float gyroRoll = _calcRoll + (fixedGx * Mathf.Rad2Deg * ArduinoDt);
 
@@ -259,19 +264,17 @@ public class ArduinoPackage : MonoBehaviour
             _calcRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
         }
 
-        // 4. 최종 출력
         CurrentPitch = _calcPitch - pitchOffset;
-        CurrentPitch *= -1;
         CurrentRoll = _calcRoll - rollOffset;
     }
 
-    // 수동 보정 함수 (C키)
     public void CalibrateSensor()
     {
         pitchOffset = _calcPitch;
         rollOffset = _calcRoll;
         gyroXOffset = RawGyroX;
         gyroYOffset = RawGyroY;
+        gyroZOffset = RawGyroZ;
         Debug.Log("영점 조절 완료!");
     }
 
@@ -283,15 +286,13 @@ public class ArduinoPackage : MonoBehaviour
         return Mathf.Sign(value) * ((Mathf.Abs(value) - deadZone) / (1 - deadZone));
     }
 
-    // ==========================================
-    // 7. 데이터 전송 (Send)
-    // ==========================================
+    // 데이터 전송
     public void SendSerialData(string message)
     {
         if (IsConnected && serialPort != null && serialPort.IsOpen)
         {
             try { serialPort.WriteLine(message); }
-            catch (System.Exception ex) { Debug.LogWarning($"전송 실패: {ex.Message}"); }
+            catch { }
         }
     }
 }

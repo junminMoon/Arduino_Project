@@ -1,18 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
 
 public class DebugScene : MonoBehaviour
 {
+    [Header("Arduino Package Connection")]
+    // 인스펙터에서 직접 연결하는 것을 권장합니다.
+    [SerializeField] private ArduinoPackage arduinoPackage;
 
+    [Header("UI Text References")]
     public TextMeshProUGUI joystickTest;
     public TextMeshProUGUI buttonTest;
     public TextMeshProUGUI touchTest;
     public TextMeshProUGUI gyroTest;
-
-    private ArduinoPackage arduinoPackage;
+    public TextMeshProUGUI infoText; // ◀️ [추가] 연결 정보 표시용 텍스트
 
     void Start()
     {
@@ -35,12 +37,20 @@ public class DebugScene : MonoBehaviour
     {
         if (arduinoPackage == null) return;
 
-        // 1. 데이터 읽기 명령 (Listener 방식)
+        // 1. 데이터 읽기 명령
         arduinoPackage.ReadSerialLoop();
 
         // 2. UI 텍스트 갱신
         if (arduinoPackage.IsConnected)
         {
+            // ---------------------------------------------------------
+            // ★ [추가] 현재 연결 모드 및 포트 정보 표시
+            // ---------------------------------------------------------
+            string mode = arduinoPackage.useUsbMode ? "<color=yellow>[Wired USB]</color>" : "<color=cyan>[Wireless BT]</color>";
+            infoText.text = $"{mode}\nPort: {arduinoPackage.CurrentPortName}\nBaud: {arduinoPackage.CurrentBaudRate}";
+
+
+            // 기존 데이터 표시
             joystickTest.text = $"JoyX : {arduinoPackage.JoyX:F2}\nJoyY : {arduinoPackage.JoyY:F2}\nJoyPressed : {arduinoPackage.IsJoyPressed}";
 
             buttonTest.text = $"X : {arduinoPackage.IsButtonXPressed}\nY : {arduinoPackage.IsButtonYPressed}\nB : {arduinoPackage.IsButtonBPressed}\nA : {arduinoPackage.IsButtonAPressed}";
@@ -50,13 +60,16 @@ public class DebugScene : MonoBehaviour
             // 6축 RAW 데이터 + 계산된 각도 표시
             gyroTest.text = $"Gyro\nX :{arduinoPackage.RawGyroX:F2}\nY : {arduinoPackage.RawGyroY:F2}\nZ : {arduinoPackage.RawGyroZ:F2}\n" +
                             $"Accel\nX : {arduinoPackage.RawAccelX:F2}\nY:{arduinoPackage.RawAccelY:F2}\nZ:{arduinoPackage.RawAccelZ:F2}\n" +
-                            $"Angle\nPitch : {arduinoPackage.CurrentPitch:F1}\nRoll : {arduinoPackage.CurrentRoll:F1}\n";
+                            $"Angle\nPitch : {arduinoPackage.CurrentPitch:F1}\nRoll : {arduinoPackage.CurrentRoll:F1}";
         }
         else
         {
-            gyroTest.text = "Disconnected...";
+            infoText.text = "Status: <color=red>Disconnected</color>";
+            gyroTest.text = ""; // 연결 끊기면 나머지 텍스트 비우기 (선택 사항)
+            joystickTest.text = "";
+            buttonTest.text = "";
+            touchTest.text = "";
         }
-
     }
 
     public void OnClickSound(int soundId)
@@ -65,26 +78,17 @@ public class DebugScene : MonoBehaviour
         {
             string command = "S " + soundId;
             arduinoPackage.SendSerialData(command);
-
             Debug.Log($"[UI] 소리 버튼 클릭: {command}");
         }
-        else
-        {
-            Debug.LogWarning("아두이노가 연결되지 않았습니다!");
-        }
     }
+
     public void OnClickVibration(int vibId)
     {
         if (arduinoPackage != null && arduinoPackage.IsConnected)
         {
             string command = "V " + vibId;
             arduinoPackage.SendSerialData(command);
-
             Debug.Log($"[Vibration Test] 전송함: {command}");
-        }
-        else
-        {
-            Debug.LogWarning("아두이노가 연결되지 않았습니다!");
         }
     }
 
