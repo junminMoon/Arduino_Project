@@ -59,15 +59,12 @@ public class ArduinoPackage : MonoBehaviour
 
     // 내부 변수
     private SerialPort serialPort;
-    private float _calcPitch, _calcRoll;
-    private float pitchOffset = 0f, rollOffset = 0f;
-    private float gyroXOffset = 0f, gyroYOffset = 0f, gyroZOffset = 0f;
-    private bool isFirstSample = true;
 
-    // 핑 전송 타이머
+    private float _calcPitch, _calcRoll;
+
     private float lastPingTime = 0f;
     private const float PingInterval = 1.0f;
-    private const float ArduinoDt = 0.2f; // 전송 주기
+    private const float ArduinoDt = 0.1f; // 전송 주기
 
 
     // ==========================================
@@ -97,7 +94,6 @@ public class ArduinoPackage : MonoBehaviour
             IsConnected = true;
 
             // 연결 성공 시 초기화
-            isFirstSample = true;
             _calcPitch = 0f; _calcRoll = 0f;
 
             Debug.Log($"<color=green>아두이노 연결 성공! [{CurrentPortName} @ {CurrentBaudRate}]</color>");
@@ -199,7 +195,6 @@ public class ArduinoPackage : MonoBehaviour
         catch { }
     }
 
-    // ... (ProcessJoystick, ProcessButtons 함수는 기존과 동일) ...
     private void ProcessJoystick(string csvData)
     {
         string[] values = csvData.Split(',');
@@ -238,44 +233,16 @@ public class ArduinoPackage : MonoBehaviour
         float accelRoll = Mathf.Atan2(ax, az) * Mathf.Rad2Deg;
         float accelPitch = Mathf.Atan2(-ay, Mathf.Sqrt(ax * ax + az * az)) * Mathf.Rad2Deg;
 
-        if (isFirstSample)
-        {
-            _calcPitch = accelPitch;
-            _calcRoll = accelRoll;
-            pitchOffset = accelPitch;
-            rollOffset = accelRoll;
+        float gyroPitch = _calcPitch + (gy * Mathf.Rad2Deg * ArduinoDt);
+        float gyroRoll = _calcRoll + (gx * Mathf.Rad2Deg * ArduinoDt);
 
-            gyroXOffset = gx;
-            gyroYOffset = gy;
-            // gyroZOffset = gz; 
+        _calcPitch = (filterWeight * gyroPitch) + ((1 - filterWeight) * accelPitch);
+        _calcRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
+        
 
-            isFirstSample = false;
-        }
-        else
-        {
-            float fixedGx = gx - gyroXOffset;
-            float fixedGy = gy - gyroYOffset;
-
-            // 축 교체 적용 (gy -> Pitch, gx -> Roll)
-            float gyroPitch = _calcPitch + (fixedGy * Mathf.Rad2Deg * ArduinoDt);
-            float gyroRoll = _calcRoll + (fixedGx * Mathf.Rad2Deg * ArduinoDt);
-
-            _calcPitch = (filterWeight * gyroPitch) + ((1 - filterWeight) * accelPitch);
-            _calcRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
-        }
-
-        CurrentPitch = _calcPitch - pitchOffset;
+        CurrentPitch = _calcPitch;
         CurrentPitch *= -1;
-        CurrentRoll = _calcRoll - rollOffset;
-    }
-
-    public void CalibrateSensor()
-    {
-        pitchOffset = _calcPitch;
-        rollOffset = _calcRoll;
-        gyroXOffset = RawGyroX;
-        gyroYOffset = RawGyroY;
-        gyroZOffset = RawGyroZ;
+        CurrentRoll = _calcRoll;
     }
 
     private float MapValue(float value) => (value / 1023.0f) * 2.0f - 1.0f;

@@ -3,7 +3,7 @@ using UnityEngine;
 public class MazeTiltController : MonoBehaviour
 {
     public float maxAngle = 30.0f;
-    public float smoothSpeed = 5.0f;
+    public float smoothSpeed = 10.0f;
 
     private ArduinoPackage arduinoPackage;
 
