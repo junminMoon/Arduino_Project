@@ -31,7 +31,6 @@ public class MazeGameManager : MonoBehaviour
 
         if (mazeGenerator != null)
         {
-            //mazeGenerator.transform.rotation = Quaternion.identity;
             mazeGenerator.InitMaze(); // 미로 새로 생성
         }
     }

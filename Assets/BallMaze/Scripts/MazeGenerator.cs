@@ -53,8 +53,6 @@ public class MazeGenerator : MonoBehaviour
         SetRandomStartAndExit();
     }
 
-    // ... (InitializeGrid, GenerateMaze, GetUnvisitedNeighbors, RemoveWallBetween 함수는 기존과 동일) ...
-    // (지면 관계상 생략, 기존 코드 그대로 유지하세요!)
     void InitializeGrid()
     {
         grid = new Cell[mazeWidth, mazeHeight];
@@ -169,7 +167,7 @@ public class MazeGenerator : MonoBehaviour
         Vector3 exitPos = GetCellCenterPosition(exitCoords.x, exitCoords.y);
         exitPos.y = 0.1f;
         CurrentGoal = Instantiate(goalPrefab, transform);
-        CurrentGoal.transform.localPosition = exitPos; // 로컬 좌표 사용
+        CurrentGoal.transform.localPosition = exitPos; 
 
         Vector3 startPos = GetCellCenterPosition(startCoords.x, startCoords.y);
         startPos.y = 3.0f;
@@ -179,11 +177,10 @@ public class MazeGenerator : MonoBehaviour
 
     Vector3 GetCellCenterPosition(int x, int y)
     {
-        // 여기도 오프셋 적용해야 공/출구 위치도 같이 이동함
         return new Vector3(
             mazeStartPosition.x + (x * cellSize) + (cellSize / 2),
             0,
             mazeStartPosition.z - (y * cellSize) - (cellSize / 2)
-        ) + mazeOffset; // ◀️ 오프셋 적용
+        ) + mazeOffset; 
     }
 }
