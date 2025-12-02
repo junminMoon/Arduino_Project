@@ -2,12 +2,14 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.VFX;
+using TMPro;
 
 namespace KartGame.KartSystems
 {
     public class ArcadeKart : MonoBehaviour
     {
         private ArduinoPackageKart arduinoPackage;
+        public TextMeshProUGUI modeText;
 
         [System.Serializable]
         public class StatPowerup
@@ -177,6 +179,9 @@ namespace KartGame.KartSystems
         List<StatPowerup> m_ActivePowerupList = new List<StatPowerup>();
         ArcadeKart.Stats m_FinalStats;
 
+        private bool m_JustCollided = false;
+        private float m_LastCollisionTime = 0f;
+        private const float CollisionCooldown = 0.5f;
         Quaternion m_LastValidRotation;
         Vector3 m_LastValidPosition;
         Vector3 m_LastCollisionNormal;
@@ -186,6 +191,8 @@ namespace KartGame.KartSystems
         public void AddPowerup(StatPowerup statPowerup) => m_ActivePowerupList.Add(statPowerup);
         public void SetCanMove(bool move) => m_CanMove = move;
         public float GetMaxSpeed() => Mathf.Max(m_FinalStats.TopSpeed, m_FinalStats.ReverseSpeed);
+
+        public bool isTiltMode = false;
 
         private void ActivateDriftVFX(bool active)
         {
@@ -222,18 +229,30 @@ namespace KartGame.KartSystems
                 trail.trailRoot.transform.rotation = transform.rotation;
             }
         }
-
+        void LateUpdate()
+        {
+          m_JustCollided = false;  
+        }
         void Update()
         {
             if (arduinoPackage != null) 
             {
                 arduinoPackage.ReadSerialLoop();  
             }
-            if (m_HasCollision)
+            
+            if (arduinoPackage.IsButtonYPressed)
             {
-                arduinoPackage.SendSerialData("S " + 3);
-                arduinoPackage.SendSerialData("V " + 2);
+                if (isTiltMode == false)
+                {
+                    isTiltMode = true;
+                }
+                else
+                {
+                    isTiltMode = false;
+                }
             }
+
+            modeText.text = isTiltMode ? "Tilt" : "JoyStick";
         }
 
         void UpdateSuspensionParams(WheelCollider wheel)
@@ -256,8 +275,6 @@ namespace KartGame.KartSystems
             {
                 arduinoPackage.Connect();
             }
-
-            
 
             UpdateSuspensionParams(FrontLeftWheel);
             UpdateSuspensionParams(FrontRightWheel);
@@ -337,7 +354,15 @@ namespace KartGame.KartSystems
             {
                 if (arduinoPackage != null)
                 {
-                    MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
+                    float tiltTurnInput = arduinoPackage.CurrentRoll / 250.0f;
+                    if (isTiltMode)
+                    {
+                        MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, tiltTurnInput);
+                    }
+                    else
+                    {
+                        MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
+                    }
                     MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
                 }
                 else
@@ -436,7 +461,25 @@ namespace KartGame.KartSystems
             }
         }
 
-        void OnCollisionEnter(Collision collision) => m_HasCollision = true;
+        void OnCollisionEnter(Collision collision)
+        {
+            m_HasCollision = true;
+            m_JustCollided = true;
+
+            if (Time.time > m_LastCollisionTime + CollisionCooldown)
+            {
+                // 1. 아두이노 패키지가 Null이 아닌지 확인
+                if (arduinoPackage != null)
+                {
+                    // 2. 명령 전송
+                    arduinoPackage.SendSerialData("S " + 3);
+                    arduinoPackage.SendSerialData("V " + 2);
+
+                    // 3. 마지막 명령 시간 업데이트
+                    m_LastCollisionTime = Time.time;
+                }
+            }
+        }
         void OnCollisionExit(Collision collision) => m_HasCollision = false;
 
         void OnCollisionStay(Collision collision)

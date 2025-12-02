@@ -66,14 +66,12 @@ public class MenuOpenKart : MonoBehaviour
             // 메뉴 열기: 캔버스를 켜고 게임 시간을 멈춥니다.
             targetCanvas.SetActive(true);
             Time.timeScale = 0f; // 🚨 게임 일시 정지
-            Debug.Log("메뉴 열림: 게임 시간 정지 (TimeScale = 0)");
         }
         else
         {
             // 메뉴 닫기: 캔버스를 끄고 게임 시간을 재개합니다.
             targetCanvas.SetActive(false);
             Time.timeScale = 1f; // 🚨 게임 재개
-            Debug.Log("메뉴 닫힘: 게임 시간 재개 (TimeScale = 1)");
         }
     }
 

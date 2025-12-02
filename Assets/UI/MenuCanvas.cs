@@ -38,4 +38,15 @@ public class MenuCanvas : MonoBehaviour
         }
         SceneManager.LoadScene("DartScene");
     }
+
+    public void toDebug()
+    {
+        string currentSceneName = SceneManager.GetActiveScene().name;
+
+        if (currentSceneName == "TestScene 2")
+        {
+            return;
+        }
+        SceneManager.LoadScene("TestScene 2");
+    }
 }

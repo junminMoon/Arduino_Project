@@ -26,4 +26,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Dart/Scene/DartScene.unity
     guid: d1aa4d80f9245416eb169984ef4f7b7c
+  - enabled: 1
+    path: Assets/TEMP/TestScene 2.unity
+    guid: 53d96dad6e7874a20a0ae598e2b9763f
   m_configObjects: {}

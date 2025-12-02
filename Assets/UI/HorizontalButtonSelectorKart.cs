@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems; // UI 선택 기능을 위해 필요
+using UnityEngine.EventSystems;
+using System.Collections.Generic; // List를 사용하지 않아도 되지만, 표준 using은 유지합니다.
 
 public class HorizontalButtonSelectorKart : MonoBehaviour
 {
@@ -12,7 +13,9 @@ public class HorizontalButtonSelectorKart : MonoBehaviour
 
     // 키를 한 번 눌렀을 때 여러 번 선택되는 것을 방지하는 쿨다운 설정
     private const float InputCooldown = 0.2f; 
-    private float lastInputTime;
+    // 🚨 TimeScale = 0에서도 작동하도록 Time.time -> Time.unscaledTime으로 변경합니다.
+    private float lastInputTime; 
+    
     private ArduinoPackageKart arduinoPackage;
 
     void Start()
@@ -27,17 +30,20 @@ public class HorizontalButtonSelectorKart : MonoBehaviour
 
     void Update()
     {
-        // 1. 방향키 입력 처리 (기존 로직 유지)
-        HandleDirectionalInput();
-
+        // 1. 아두이노 시리얼 읽기 (Null 체크)
         if (arduinoPackage != null) 
         {
             arduinoPackage.ReadSerialLoop();  
         }
 
-        // 2. E 키 입력 처리 (새로운 기능)
-        // E 키를 눌렀고, 버튼 배열이 비어있지 않은 경우
-        if ((Input.GetKeyDown(KeyCode.E) || arduinoPackage.IsButtonAPressed) && buttons.Length > 0)
+        // 2. 방향 입력 처리 (선택 이동)
+        HandleDirectionalInput();
+        
+        // 3. 버튼 클릭 입력 처리 (Null 체크 및 E 키/아두이노 A 버튼 통합)
+        bool isEKartButtonPressed = Input.GetKeyDown(KeyCode.E);
+        bool isArduinoAPressed = (arduinoPackage != null && arduinoPackage.IsButtonAPressed);
+
+        if ((isEKartButtonPressed || isArduinoAPressed) && buttons.Length > 0)
         {
             // 현재 선택된 버튼의 OnClick() 이벤트를 강제로 실행합니다.
             buttons[currentIndex].onClick.Invoke();
@@ -47,23 +53,29 @@ public class HorizontalButtonSelectorKart : MonoBehaviour
     // 선택 이동 처리 및 인덱스 업데이트
     private void HandleDirectionalInput()
     {
-        if (Time.time < lastInputTime + InputCooldown)
+        // 🚨 TimeScale = 0에서도 작동하도록 Time.time -> Time.unscaledTime으로 변경합니다.
+        if (Time.unscaledTime < lastInputTime + InputCooldown)
         {
             return;
         }
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
+        float arduinoJoyX = (arduinoPackage != null) ? arduinoPackage.JoyX : 0f; // 🚨 Null 체크 후 JoyX 값 사용
+        
         int newIndex = currentIndex;
 
-        if (horizontalInput > 0.5f || arduinoPackage.JoyX > 0.5f)
+        // 키보드 또는 아두이노 조이콘 입력 처리
+        if (horizontalInput > 0.5f || arduinoJoyX > 0.5f)
         {
             newIndex++;
-            lastInputTime = Time.time;
+            // 🚨 Time.unscaledTime으로 타이머 업데이트
+            lastInputTime = Time.unscaledTime;
         }
-        else if (horizontalInput < -0.5f || arduinoPackage.JoyX < -0.5f)
+        else if (horizontalInput < -0.5f || arduinoJoyX < -0.5f)
         {
             newIndex--;
-            lastInputTime = Time.time;
+            // 🚨 Time.unscaledTime으로 타이머 업데이트
+            lastInputTime = Time.unscaledTime;
         }
 
         // 인덱스를 배열 범위 내로 유지
@@ -79,18 +91,18 @@ public class HorizontalButtonSelectorKart : MonoBehaviour
     }
 
     /**
-     * @brief 현재 선택된 버튼과 나머지 버튼의 색상을 시각적으로 업데이트합니다.
+     * @brief 현재 선택된 버튼과 나머지 버튼의 시각적 상태를 업데이트합니다.
      */
     private void UpdateSelectionVisuals()
     {
         for (int i = 0; i < buttons.Length; i++)
         {
-        // 자식 오브젝트 중 "HighlightPanel" (혹은 지정한 이름)을 찾습니다.
+            // 자식 오브젝트 중 "HighlightPanel" (혹은 지정한 이름)을 찾습니다.
             Transform highlight = buttons[i].transform.Find("HighlightPanel");
 
             if (highlight != null)
             {
-                // 현재 선택된 버튼일 때만 하이라이트 패널을 눕니다.
+                // 현재 선택된 버튼일 때만 하이라이트 패널을 활성화합니다.
                 if (i == currentIndex)
                 {
                     highlight.gameObject.SetActive(true);
