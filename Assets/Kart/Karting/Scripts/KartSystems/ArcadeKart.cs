@@ -225,7 +225,13 @@ namespace KartGame.KartSystems
 
         void Update()
         {
-          arduinoPackage.ReadSerialLoop();  
+            arduinoPackage.ReadSerialLoop();  
+
+            if (m_HasCollision)
+            {
+                arduinoPackage.SendSerialData("S " + 3);
+                arduinoPackage.SendSerialData("V " + 2);
+            }
         }
 
         void UpdateSuspensionParams(WheelCollider wheel)
@@ -330,7 +336,7 @@ namespace KartGame.KartSystems
                 if (arduinoPackage != null)
                 {
                     MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
-                    // MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
+                    MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
                 }
                 else
                 {

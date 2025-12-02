@@ -72,7 +72,7 @@ public class DebugScene : MonoBehaviour
         }
     }
 
-    public void OnClickSound(int soundId)
+    public void OnClickSound(int soundId)   // soundId : 1 -> 띠띵(도미) 2 -> 띠(라) 3 -> 띠띠(솔솔) 4 -> 띠로리(도미솔)
     {
         if (arduinoPackage != null && arduinoPackage.IsConnected)
         {
@@ -82,7 +82,7 @@ public class DebugScene : MonoBehaviour
         }
     }
 
-    public void OnClickVibration(int vibId)
+    public void OnClickVibration(int vibId) // vibId : 1 -> 약한 진동 2 -> 강한 진동 3 -> 중간 진동 두번
     {
         if (arduinoPackage != null && arduinoPackage.IsConnected)
         {
