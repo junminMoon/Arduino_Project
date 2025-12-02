@@ -3,18 +3,24 @@ using System.IO.Ports;
 using System.Globalization;
 using System;
 
-
 public class ArduinoPackageKart : MonoBehaviour
 {
     // ==========================================
     // 1. 인스펙터 설정 (Inspector Settings)
     // ==========================================
-    [Header("통신 설정 (Communication)")]
-    [SerializeField] private string portName = "COM8";
-    [SerializeField] private int baudRate = 9600;
+    [Header("모드 선택 (Mode Selection)")]
+    public bool useUsbMode = false; 
 
-    [Header("설정 (Settings)")]
-    [SerializeField] private float filterWeight = 0.98f;
+    [Header("블루투스 설정 (Wireless)")]
+    [SerializeField] private string btPortName = "COM8"; // 블루투스 포트
+    [SerializeField] private int btBaudRate = 9600;      // 블루투스 속도
+
+    [Header("유선 USB 설정 (Wired)")]
+    [SerializeField] private string usbPortName = "COM5"; // USB 포트 
+    [SerializeField] private int usbBaudRate = 115200;    // USB 속도 
+
+    [Header("필터 및 보정 설정")]
+    [SerializeField] private float filterWeight = 0.90f; // (0.9 추천)
     [SerializeField] private float deadZone = 0.15f;
 
 
@@ -23,11 +29,15 @@ public class ArduinoPackageKart : MonoBehaviour
     // ==========================================
     public bool IsConnected { get; private set; }
 
-    // [MPU6050] 가공된 기울기 (상보 필터 적용)
+    // 현재 연결된 모드 정보 (디버깅용)
+    public string CurrentPortName { get; private set; }
+    public int CurrentBaudRate { get; private set; }
+
+    // [MPU6050]
     public float CurrentPitch { get; private set; }
     public float CurrentRoll { get; private set; }
 
-    // [MPU6050] 디버그용 RAW 데이터 (6축)
+    // RAW Data
     public float RawGyroX { get; private set; }
     public float RawGyroY { get; private set; }
     public float RawGyroZ { get; private set; }
@@ -50,26 +60,48 @@ public class ArduinoPackageKart : MonoBehaviour
     // 내부 변수
     private SerialPort serialPort;
 
+    private float _calcPitch, _calcRoll;
+
+    private float lastPingTime = 0f;
+    private const float PingInterval = 1.0f;
+    private const float ArduinoDt = 0.1f; // 전송 주기
+
 
     // ==========================================
-    // 3. 연결 및 해제 (Connection)
+    // 3. 연결 및 해제 (수정됨!)
     // ==========================================
     public void Connect()
     {
-        if (IsConnected) return; // 이미 연결되어 있으면 패스
+        if (IsConnected) return;
+
+        // ★ 모드에 따라 포트와 속도 자동 선택
+        if (useUsbMode)
+        {
+            CurrentPortName = usbPortName;
+            CurrentBaudRate = usbBaudRate;
+        }
+        else
+        {
+            CurrentPortName = btPortName;
+            CurrentBaudRate = btBaudRate;
+        }
 
         try
         {
-            serialPort = new SerialPort(portName, baudRate);
-            serialPort.ReadTimeout = 50;
+            serialPort = new SerialPort(CurrentPortName, CurrentBaudRate);
+            serialPort.ReadTimeout = 10;
             serialPort.Open();
             IsConnected = true;
-            Debug.Log($"<color=green>아두이노 연결 성공! ({portName})</color>");
+
+            // 연결 성공 시 초기화
+            _calcPitch = 0f; _calcRoll = 0f;
+
+            Debug.Log($"<color=green>아두이노 연결 성공! [{CurrentPortName} @ {CurrentBaudRate}]</color>");
         }
         catch (System.Exception ex)
         {
             IsConnected = false;
-            Debug.LogError($"<color=red>아두이노 연결 실패: {ex.Message}</color>");
+            Debug.LogError($"<color=red>연결 실패 ({CurrentPortName}): {ex.Message}</color>");
         }
     }
 
@@ -82,7 +114,6 @@ public class ArduinoPackageKart : MonoBehaviour
         }
     }
 
-    // 앱이 꺼질 때 자동으로 연결 해제 (안전장치)
     void OnApplicationQuit()
     {
         Disconnect();
@@ -90,27 +121,35 @@ public class ArduinoPackageKart : MonoBehaviour
 
 
     // ==========================================
-    // 4. 메인 루프 (외부에서 호출)
+    // 4. 메인 루프
     // ==========================================
     public void ReadSerialLoop()
     {
         if (!IsConnected || serialPort == null || !serialPort.IsOpen) return;
 
+        // ★ [추가됨] 1. 핑(Ping) 전송 (1초마다) - 아두이노 깨우기!
+        if (Time.time - lastPingTime > PingInterval)
+        {
+            try
+            {
+                serialPort.WriteLine("P");
+                lastPingTime = Time.time;
+            }
+            catch { /* 무시 */ }
+        }
+
+        // 2. 데이터 수신
         try
         {
             string rawData = serialPort.ReadLine();
             DispatchData(rawData);
         }
         catch (System.TimeoutException) { }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"데이터 오류: {ex.Message}");
-        }
+        catch (System.Exception ex) { Debug.LogWarning($"데이터 오류: {ex.Message}"); }
     }
 
-
     // ==========================================
-    // 5. 데이터 처리 로직 (Parsing Logic)
+    // 5. 데이터 분류 및 처리
     // ==========================================
     private void DispatchData(string data)
     {
@@ -148,11 +187,9 @@ public class ArduinoPackageKart : MonoBehaviour
             float ay = float.Parse(values[4], CultureInfo.InvariantCulture);
             float az = float.Parse(values[5], CultureInfo.InvariantCulture);
 
-            // RAW 데이터 저장 (디버그용)
             RawGyroX = gx; RawGyroY = gy; RawGyroZ = gz;
             RawAccelX = ax; RawAccelY = ay; RawAccelZ = az;
 
-            // 상보 필터 계산
             CalculateComplementaryFilter(gx, gy, ax, ay, az);
         }
         catch { }
@@ -169,7 +206,6 @@ public class ArduinoPackageKart : MonoBehaviour
                 float rawY = float.Parse(values[1], CultureInfo.InvariantCulture);
                 JoyX = ApplyDeadzone(-MapValue(rawX));
                 JoyY = ApplyDeadzone(MapValue(rawY));
-
                 int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
                 IsJoyPressed = (sw == 0);
             }
@@ -187,19 +223,26 @@ public class ArduinoPackageKart : MonoBehaviour
         else if (key == "T") IsTouchPressed = isPressed;
     }
 
+
     // ==========================================
-    // 6. 계산 및 유틸리티
+    // 7. 계산 및 유틸리티
     // ==========================================
     private void CalculateComplementaryFilter(float gx, float gy, float ax, float ay, float az)
     {
-        float accelRoll = Mathf.Atan2(ay, az) * Mathf.Rad2Deg;
-        float accelPitch = Mathf.Atan2(-ax, Mathf.Sqrt(ay * ay + az * az)) * Mathf.Rad2Deg;
+        // [축 교체 및 방향 보정]
+        float accelRoll = Mathf.Atan2(ax, az) * Mathf.Rad2Deg;
+        float accelPitch = Mathf.Atan2(-ay, Mathf.Sqrt(ax * ax + az * az)) * Mathf.Rad2Deg;
 
-        float gyroPitch = CurrentPitch + (gx * Mathf.Rad2Deg * Time.deltaTime);
-        float gyroRoll = CurrentRoll + (gy * Mathf.Rad2Deg * Time.deltaTime);
+        float gyroPitch = _calcPitch + (gy * Mathf.Rad2Deg * ArduinoDt);
+        float gyroRoll = _calcRoll + (gx * Mathf.Rad2Deg * ArduinoDt);
 
-        CurrentPitch = (filterWeight * gyroPitch) + ((1 - filterWeight) * accelPitch);
-        CurrentRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
+        _calcPitch = (filterWeight * gyroPitch) + ((1 - filterWeight) * accelPitch);
+        _calcRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
+        
+
+        CurrentPitch = _calcPitch;
+        CurrentPitch *= -1;
+        CurrentRoll = _calcRoll;
     }
 
     private float MapValue(float value) => (value / 1023.0f) * 2.0f - 1.0f;
@@ -210,15 +253,13 @@ public class ArduinoPackageKart : MonoBehaviour
         return Mathf.Sign(value) * ((Mathf.Abs(value) - deadZone) / (1 - deadZone));
     }
 
-    // ==========================================
-    // 7. 데이터 전송 (Send)
-    // ==========================================
+    // 데이터 전송
     public void SendSerialData(string message)
     {
         if (IsConnected && serialPort != null && serialPort.IsOpen)
         {
             try { serialPort.WriteLine(message); }
-            catch (System.Exception ex) { Debug.LogWarning($"전송 실패: {ex.Message}"); }
+            catch { }
         }
     }
 }

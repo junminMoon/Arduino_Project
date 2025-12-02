@@ -225,8 +225,10 @@ namespace KartGame.KartSystems
 
         void Update()
         {
-            arduinoPackage.ReadSerialLoop();  
-
+            if (arduinoPackage != null) 
+            {
+                arduinoPackage.ReadSerialLoop();  
+            }
             if (m_HasCollision)
             {
                 arduinoPackage.SendSerialData("S " + 3);

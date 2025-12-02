@@ -9,12 +9,10 @@ public class InGameMenuManager : MonoBehaviour
     [Tooltip("Master volume when menu is open")]
     [Range(0.001f, 1f)]
     public float volumeWhenMenuOpen = 0.5f;
-    [Tooltip("Toggle component for shadows")]
-    public Toggle shadowsToggle;
-    [Tooltip("Toggle component for framerate display")]
-    public Toggle framerateToggle;
     [Tooltip("GameObject for the controls")]
     public GameObject controlImage;
+
+    private ArduinoPackageKart arduinoPackage;
 
     //PlayerInputHandler m_PlayerInputsHandler;
     FramerateCounter m_FramerateCounter;
@@ -29,18 +27,20 @@ public class InGameMenuManager : MonoBehaviour
 
         menuRoot.SetActive(false);
 
-        shadowsToggle.isOn = QualitySettings.shadows != ShadowQuality.Disable;
-        shadowsToggle.onValueChanged.AddListener(OnShadowsChanged);
+        arduinoPackage = FindObjectOfType<ArduinoPackageKart>();
 
-        framerateToggle.isOn = m_FramerateCounter.uiText.gameObject.activeSelf;
-        framerateToggle.onValueChanged.AddListener(OnFramerateCounterChanged);
+        // shadowsToggle.isOn = QualitySettings.shadows != ShadowQuality.Disable;
+        // shadowsToggle.onValueChanged.AddListener(OnShadowsChanged);
+
+        // framerateToggle.isOn = m_FramerateCounter.uiText.gameObject.activeSelf;
+        // framerateToggle.onValueChanged.AddListener(OnFramerateCounterChanged);
     }
 
     private void Update()
     {
 
         if (Input.GetKeyDown(KeyCode.X)
-            || (menuRoot.activeSelf && Input.GetButtonDown(GameConstants.k_ButtonNameCancel)))
+            || arduinoPackage.IsButtonXPressed)
         {
             if (controlImage.activeSelf)
             {
@@ -57,7 +57,6 @@ public class InGameMenuManager : MonoBehaviour
             if (EventSystem.current.currentSelectedGameObject == null)
             {
                 EventSystem.current.SetSelectedGameObject(null);
-                shadowsToggle.Select();
             }
         }
     }

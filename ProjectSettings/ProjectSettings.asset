@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 24
-  productGUID: 7ad34cf4a5a0a468e85cbfb769810699
+  productGUID: 3f276dd7e88d34c63b58c1d3eea4496d
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -709,7 +709,7 @@ PlayerSettings:
   cloudProjectId: da9de819-d6fb-474b-961c-5a0e806f5200
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Arduino_Project
+  projectName: 
   organizationId: unity_2025112431
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
