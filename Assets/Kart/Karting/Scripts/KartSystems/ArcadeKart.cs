@@ -192,6 +192,12 @@ namespace KartGame.KartSystems
         public float GetMaxSpeed() => Mathf.Max(m_FinalStats.TopSpeed, m_FinalStats.ReverseSpeed);
 
         public bool isTiltMode = false;
+
+        [Header("Tilt Steering Settings")] // 🚨 추가
+        [Range(10f, 90f), Tooltip("회전 입력이 1.0이 되는 최대 Pitch 각도. 값이 작을수록 민감합니다.")] // 🚨 추가
+        public float MaxSteeringTiltAngle = 45f; // 45도를 기준으로 시작
+        
+        float rawInput = 0;
         float tiltTurnInput = 0;
 
         private void ActivateDriftVFX(bool active)
@@ -242,7 +248,8 @@ namespace KartGame.KartSystems
                     isTiltMode = false;
                 }
             }
-            tiltTurnInput = (-arduinoPackage.CurrentPitch / 180.0f) * 3;
+            rawInput = -(arduinoPackage.CurrentPitch / MaxSteeringTiltAngle);
+            tiltTurnInput = Mathf.Clamp(rawInput, -1.0f, 1.0f);
             modeText.text = isTiltMode ? "Tilt" : "JoyStick";
         }
 
@@ -343,12 +350,10 @@ namespace KartGame.KartSystems
                     if (isTiltMode)
                     {
                         MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, tiltTurnInput);
-                        Debug.Log(tiltTurnInput);
                     }
                     else
                     {
                         MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
-                        Debug.Log(arduinoPackage.JoyX);
                     }
                     MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
                 }
