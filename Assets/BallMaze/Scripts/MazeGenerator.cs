@@ -161,6 +161,8 @@ public class MazeGenerator : MonoBehaviour
     {
         if (arduinoPackage.IsButtonADown || Input.GetKeyDown(KeyCode.A))
         {
+            Destroy(CurrentBall);
+            CurrentBall = Instantiate(ballPrefab, transform);
             CurrentBall.transform.localPosition = startPos;
         }  
     }
