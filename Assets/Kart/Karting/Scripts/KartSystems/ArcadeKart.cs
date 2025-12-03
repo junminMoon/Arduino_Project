@@ -395,8 +395,6 @@ namespace KartGame.KartSystems
                     {
                         MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
                     }
-                    MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
-                    Debug.Log(Input.TurnInput);
                 }
                 else
                 {
