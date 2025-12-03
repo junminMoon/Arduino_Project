@@ -192,6 +192,7 @@ namespace KartGame.KartSystems
         public float GetMaxSpeed() => Mathf.Max(m_FinalStats.TopSpeed, m_FinalStats.ReverseSpeed);
 
         public bool isTiltMode = false;
+        float tiltTurnInput = 0;
 
         private void ActivateDriftVFX(bool active)
         {
@@ -241,7 +242,7 @@ namespace KartGame.KartSystems
                     isTiltMode = false;
                 }
             }
-
+            tiltTurnInput = arduinoPackage.CurrentPitch / 250.0f;
             modeText.text = isTiltMode ? "Tilt" : "JoyStick";
         }
 
@@ -339,7 +340,7 @@ namespace KartGame.KartSystems
             {
                 if (arduinoPackage != null)
                 {
-                    float tiltTurnInput = arduinoPackage.CurrentRoll / 250.0f;
+                    
                     if (isTiltMode)
                     {
                         MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, tiltTurnInput);

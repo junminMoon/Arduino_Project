@@ -96,6 +96,7 @@ public class ArduinoPackageKart : MonoBehaviour
     {
     // 🚨 LateUpdate는 해당 프레임의 모든 Update 및 로직이 끝난 후 실행됩니다.
     // 여기서 Down 이벤트 변수를 모두 false로 리셋하여, 다음 프레임에서 이전에 눌린 상태가 감지되는 것을 방지합니다.
+
     IsButtonADown = false;
     IsButtonBDown = false;
     IsButtonXDown = false;
