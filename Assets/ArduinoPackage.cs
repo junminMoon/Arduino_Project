@@ -28,13 +28,14 @@ public class ArduinoPackage : MonoBehaviour
     // ==========================================
     // 2. 외부 공개 데이터 (Properties)
     // ==========================================
+    // 연결 상태 변수
     public bool IsConnected { get; private set; }
 
-    // 현재 연결된 모드 정보 (디버깅용)
+    // 현재 연결된 모드 정보
     public string CurrentPortName { get; private set; }
     public int CurrentBaudRate { get; private set; }
 
-    // [MPU6050]
+    // [MPU6050] 기울기 값
     public float CurrentPitch { get; private set; }
     public float CurrentRoll { get; private set; }
 
@@ -46,12 +47,12 @@ public class ArduinoPackage : MonoBehaviour
     public float RawAccelY { get; private set; }
     public float RawAccelZ { get; private set; }
 
-    // [Joystick]
+    // [Joystick] 조이스틱 값
     public float JoyX { get; private set; }
     public float JoyY { get; private set; }
     public bool IsJoyPressed { get; private set; }
 
-    // [Buttons]
+    // [Buttons] 버튼 값
     public bool IsButtonXPressed { get; private set; }
     public bool IsButtonYPressed { get; private set; }
     public bool IsButtonBPressed { get; private set; }
@@ -63,6 +64,7 @@ public class ArduinoPackage : MonoBehaviour
     private bool m_PrevIsButtonXPressed;
     private bool m_PrevIsButtonYPressed;
 
+    // 일회성 버튼 입력 값
     public bool IsButtonADown { get; private set; }
     public bool IsButtonBDown { get; private set; }
     public bool IsButtonXDown { get; private set; }
@@ -91,12 +93,15 @@ public class ArduinoPackage : MonoBehaviour
     {
         ReadSerialLoop();
     }
+    
+    void OnApplicationQuit()
+    {
+        Disconnect();
+    }
+
 
     void LateUpdate()
     {
-    // 🚨 LateUpdate는 해당 프레임의 모든 Update 및 로직이 끝난 후 실행됩니다.
-    // 여기서 Down 이벤트 변수를 모두 false로 리셋하여, 다음 프레임에서 이전에 눌린 상태가 감지되는 것을 방지합니다.
-
     IsButtonADown = false;
     IsButtonBDown = false;
     IsButtonXDown = false;
@@ -104,7 +109,7 @@ public class ArduinoPackage : MonoBehaviour
     }
     
     // ==========================================
-    // 3. 연결 및 해제 (수정됨!)
+    // 3. 연결 및 해제
     // ==========================================
     public void Connect()
     {
@@ -149,13 +154,6 @@ public class ArduinoPackage : MonoBehaviour
             IsConnected = false;
         }
     }
-
-    void OnApplicationQuit()
-    {
-        Disconnect();
-    }
-
-
     // ==========================================
     // 4. 메인 루프
     // ==========================================
@@ -163,7 +161,6 @@ public class ArduinoPackage : MonoBehaviour
     {
         if (!IsConnected || serialPort == null || !serialPort.IsOpen) return;
 
-        // ★ [추가됨] 1. 핑(Ping) 전송 (1초마다) - 아두이노 깨우기!
         if (Time.time - lastPingTime > PingInterval)
         {
             try
@@ -171,10 +168,10 @@ public class ArduinoPackage : MonoBehaviour
                 serialPort.WriteLine("P");
                 lastPingTime = Time.time;
             }
-            catch { /* 무시 */ }
+            catch {}
         }
 
-        // 2. 데이터 수신
+        // 데이터 수신
         try
         {
             string rawData = serialPort.ReadLine();
@@ -209,6 +206,7 @@ public class ArduinoPackage : MonoBehaviour
         }
     }
 
+    // 기울기 값 처리
     private void ProcessMPU(string csvData)
     {
         string[] values = csvData.Split(',');
@@ -231,6 +229,7 @@ public class ArduinoPackage : MonoBehaviour
         catch { }
     }
 
+    // 조이스틱 값 처리
     private void ProcessJoystick(string csvData)
     {
         string[] values = csvData.Split(',');
@@ -249,14 +248,15 @@ public class ArduinoPackage : MonoBehaviour
         }
     }
 
+    // 버튼 값 처리
     private void ProcessButtons(string key, string state)
     {
         bool isPressed = (state == "1");
 
-        // 1. 이전 상태 업데이트를 위한 함수 호출
+        // 이전 상태 업데이트를 위한 함수 호출
         UpdateDownStates(key, isPressed); 
 
-        // 2. 현재 상태 업데이트 (기존 로직 유지)
+        // 현재 상태 업데이트
         if (key == "X") IsButtonXPressed = isPressed;
         else if (key == "Y") IsButtonYPressed = isPressed;
         else if (key == "B") IsButtonBPressed = isPressed;
@@ -299,7 +299,7 @@ public class ArduinoPackage : MonoBehaviour
 
 
     // ==========================================
-    // 7. 계산 및 유틸리티
+    // 5. 계산 및 유틸리티
     // ==========================================
     private void CalculateComplementaryFilter(float gx, float gy, float ax, float ay, float az)
     {
@@ -344,7 +344,7 @@ public class ArduinoPackage : MonoBehaviour
 
     int attempts = 0;
     
-    // 모드에 따라 포트와 속도 설정 (기존 Connect() 로직 통합)
+    // 모드에 따라 포트와 속도 설정
     if (useUsbMode)
     {
         CurrentPortName = usbPortName;
@@ -363,7 +363,7 @@ public class ArduinoPackage : MonoBehaviour
         
         try
         {
-            // SerialPort 객체 재할당 (이전 실패 시의 잔여 객체 제거)
+            // SerialPort 객체 재할당
             serialPort = new SerialPort(CurrentPortName, CurrentBaudRate);
             serialPort.ReadTimeout = 10;
             serialPort.Open();
