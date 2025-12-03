@@ -191,14 +191,22 @@ namespace KartGame.KartSystems
         public void SetCanMove(bool move) => m_CanMove = move;
         public float GetMaxSpeed() => Mathf.Max(m_FinalStats.TopSpeed, m_FinalStats.ReverseSpeed);
 
-        public bool isTiltMode = false;
+        [Header("Tilt Steering Settings")]
+        [Range(10f, 90f), Tooltip("회전 입력이 1.0이 되는 최대 Pitch 각도. (기존 로직 유지)")]
+        public float MaxSteeringTiltAngle = 45f; 
 
-        [Header("Tilt Steering Settings")] // 🚨 추가
-        [Range(10f, 90f), Tooltip("회전 입력이 1.0이 되는 최대 Pitch 각도. 값이 작을수록 민감합니다.")] // 🚨 추가
-        public float MaxSteeringTiltAngle = 45f; // 45도를 기준으로 시작
-        
-        float rawInput = 0;
+        // 🚨 새로 추가된 적분 제어 변수
+        [Tooltip("회전값(Steer Input)이 초당 증가/감소하는 속도입니다. 값이 클수록 회전이 빨라집니다.")]
+        public float TiltIntegrationRate = 2.0f; // 초당 2.0f 증가 (예시)
+        [Tooltip("회전을 시작하는 최소 Pitch 각도입니다. 이 각도 이내에서는 회전값이 0으로 복귀합니다.")]
+        public float TiltDeadzoneAngle = 5f;
+
+        // 🚨 회전값을 누적할 내부 변수 (초기값 0)
+        private float m_TiltAccumulator = 0f; 
+
+        public bool isTiltMode = false;
         float tiltTurnInput = 0;
+        float currentPitch = 0;
 
         private void ActivateDriftVFX(bool active)
         {
@@ -248,8 +256,40 @@ namespace KartGame.KartSystems
                     isTiltMode = false;
                 }
             }
-            rawInput = -(arduinoPackage.CurrentPitch / MaxSteeringTiltAngle);
-            tiltTurnInput = Mathf.Clamp(rawInput, -1.0f, 1.0f);
+
+            currentPitch = arduinoPackage.CurrentPitch;
+            float targetSteerDirection = 0f; // 목표 회전 방향 (-1, 0, 1)
+
+            // Deadzone (불감대)를 벗어났는지 확인하고 방향 설정
+            if (currentPitch > TiltDeadzoneAngle)
+            {
+                // 오른쪽으로 기울임 (왼쪽으로 회전)
+                targetSteerDirection = -(currentPitch / Mathf.Abs(currentPitch)); // -1f
+            }
+            else if (currentPitch < -TiltDeadzoneAngle)
+            {
+                // 왼쪽으로 기울임 (오른쪽으로 회전)
+                targetSteerDirection = -(currentPitch / Mathf.Abs(currentPitch)); // 1f
+            }
+            // (참고: CurrentPitch의 값이 반전되어 들어온다고 가정하고 처리했습니다. 아닐 경우 부호를 반전하세요.)
+            
+            // 2. 누적 (적분) 계산
+            if (targetSteerDirection != 0)
+            {
+                // 기울인 방향으로 누적 값을 증가/감소시킵니다.
+                m_TiltAccumulator += targetSteerDirection * TiltIntegrationRate * Time.fixedDeltaTime;
+            }
+            else
+            {
+                // Deadzone 안에 있으면 회전값을 0으로 복귀시킵니다.
+                m_TiltAccumulator = Mathf.MoveTowards(m_TiltAccumulator, 0f, TiltIntegrationRate * Time.fixedDeltaTime);
+            }
+            
+            // 3. 최댓값 클램프 (1.0f를 넘지 않도록 제한)
+            m_TiltAccumulator = Mathf.Clamp(m_TiltAccumulator, -1.0f, 1.0f);
+            
+            // 🚨 새로운 누적 값(m_TiltAccumulator)을 회전 입력으로 사용
+            tiltTurnInput = m_TiltAccumulator;
             modeText.text = isTiltMode ? "Tilt" : "JoyStick";
         }
 
@@ -356,6 +396,7 @@ namespace KartGame.KartSystems
                         MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
                     }
                     MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
+                    Debug.Log(Input.TurnInput);
                 }
                 else
                 {
