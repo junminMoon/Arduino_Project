@@ -42,17 +42,10 @@ public class MazeGameManager : MonoBehaviour
         if (isGameClear)
         {
             // Y 버튼: 재시작
-            if (arduinoPackage.IsButtonYPressed)
+            if (arduinoPackage.IsButtonBDown)
             {
                 Debug.Log("Restart Game");
                 StartGame();
-            }
-
-            // B 버튼: 종료 (로그만 출력)
-            if (arduinoPackage.IsButtonBPressed)
-            {
-                Debug.Log("Quit Game");
-                // Application.Quit(); // 나중에 주석 해제하면 실제 종료됨
             }
         }
     }
