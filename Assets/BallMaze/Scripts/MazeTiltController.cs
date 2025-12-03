@@ -34,7 +34,7 @@ public class MazeTiltController : MonoBehaviour
             ApplyRotation(pitch, roll);
         }
 
-        if (arduinoPackage.IsButtonYPressed)
+        if (arduinoPackage.IsButtonYDown)
         {
             if (isTiltMode == false)
             {

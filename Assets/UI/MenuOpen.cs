@@ -26,7 +26,7 @@ public class MenuOpen : MonoBehaviour
         // 1. 아두이노 패키지가 연결되어 있다면 시리얼 통신을 읽고 버튼 상태를 확인합니다.
         if (arduinoPackage != null) 
         {   
-            isArduinoButtonPressed = arduinoPackage.IsButtonXPressed;
+            isArduinoButtonPressed = arduinoPackage.IsButtonXDown;
         }
 
         // 2. 토글 조건 확인: X 키 입력 또는 아두이노 버튼 입력

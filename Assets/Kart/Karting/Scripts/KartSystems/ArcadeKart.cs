@@ -230,7 +230,7 @@ namespace KartGame.KartSystems
         }
         void Update()
         {   
-            if (arduinoPackage.IsButtonYPressed)
+            if (arduinoPackage.IsButtonYDown)
             {
                 if (isTiltMode == false)
                 {

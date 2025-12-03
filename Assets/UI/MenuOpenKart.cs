@@ -25,7 +25,7 @@ public class MenuOpenKart : MonoBehaviour
 
         if (arduinoPackage != null) 
         {
-            isArduinoButtonPressed = arduinoPackage.IsButtonXPressed;
+            isArduinoButtonPressed = arduinoPackage.IsButtonXDown;
         }
 
         // 2. 토글 조건 확인: X 키 입력 또는 아두이노 버튼 입력

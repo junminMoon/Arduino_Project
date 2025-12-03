@@ -57,6 +57,16 @@ public class ArduinoPackage : MonoBehaviour
     public bool IsButtonAPressed { get; private set; }
     public bool IsTouchPressed { get; private set; }
 
+    private bool m_PrevIsButtonAPressed;
+    private bool m_PrevIsButtonBPressed;
+    private bool m_PrevIsButtonXPressed;
+    private bool m_PrevIsButtonYPressed;
+
+    public bool IsButtonADown { get; private set; }
+    public bool IsButtonBDown { get; private set; }
+    public bool IsButtonXDown { get; private set; }
+    public bool IsButtonYDown { get; private set; }
+
     // 내부 변수
     private SerialPort serialPort;
 
@@ -226,11 +236,49 @@ public class ArduinoPackage : MonoBehaviour
     private void ProcessButtons(string key, string state)
     {
         bool isPressed = (state == "1");
+
+        // 1. 이전 상태 업데이트를 위한 함수 호출
+        UpdateDownStates(key, isPressed); 
+
+        // 2. 현재 상태 업데이트 (기존 로직 유지)
         if (key == "X") IsButtonXPressed = isPressed;
         else if (key == "Y") IsButtonYPressed = isPressed;
         else if (key == "B") IsButtonBPressed = isPressed;
         else if (key == "A") IsButtonAPressed = isPressed;
         else if (key == "T") IsTouchPressed = isPressed;
+    }
+
+
+    private void UpdateDownStates(string key, bool isCurrentPressed)
+    {
+        // 'A' 버튼에 대한 눌림 순간 감지
+        if (key == "A")
+        {
+            IsButtonADown = isCurrentPressed && !m_PrevIsButtonAPressed;
+            
+            m_PrevIsButtonAPressed = isCurrentPressed;
+        }
+        // 'B' 버튼에 대한 눌림 순간 감지
+        if (key == "B")
+        {
+            IsButtonBDown = isCurrentPressed && !m_PrevIsButtonBPressed;
+            
+            m_PrevIsButtonBPressed = isCurrentPressed;
+        }
+        // 'X' 버튼에 대한 눌림 순간 감지
+        if (key == "X")
+        {
+            IsButtonXDown = isCurrentPressed && !m_PrevIsButtonXPressed;
+            
+            m_PrevIsButtonXPressed = isCurrentPressed;
+        }
+        // 'Y' 버튼에 대한 눌림 순간 감지
+        if (key == "Y")
+        {
+            IsButtonYDown = isCurrentPressed && !m_PrevIsButtonYPressed;
+            
+            m_PrevIsButtonYPressed = isCurrentPressed;
+        }
     }
 
 
