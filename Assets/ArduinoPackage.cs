@@ -2,6 +2,7 @@ using UnityEngine;
 using System.IO.Ports;
 using System.Globalization;
 using System;
+using System.Collections;
 
 public class ArduinoPackage : MonoBehaviour
 {
@@ -76,10 +77,14 @@ public class ArduinoPackage : MonoBehaviour
     private const float PingInterval = 1.0f;
     private const float ArduinoDt = 0.1f; // 전송 주기
 
+    private const int MaxConnectionAttempts = 5;
+    private const float RetryDelay = 0.5f; // 재시도 간격 (0.5초)
+    private Coroutine connectCoroutine; // 코루틴 참조 변수
+
 
     void Start()
     {
-        Connect();  
+        connectCoroutine = StartCoroutine(AttemptConnectionCoroutine());
     }
 
     void Update()
@@ -320,4 +325,58 @@ public class ArduinoPackage : MonoBehaviour
             catch { }
         }
     }
+
+    private IEnumerator AttemptConnectionCoroutine()
+{
+    // 이미 연결되었다면 종료
+    if (IsConnected) yield break;
+
+    int attempts = 0;
+    
+    // 모드에 따라 포트와 속도 설정 (기존 Connect() 로직 통합)
+    if (useUsbMode)
+    {
+        CurrentPortName = usbPortName;
+        CurrentBaudRate = usbBaudRate;
+    }
+    else
+    {
+        CurrentPortName = btPortName;
+        CurrentBaudRate = btBaudRate;
+    }
+
+    while (!IsConnected && attempts < MaxConnectionAttempts)
+    {
+        attempts++;
+        Debug.Log($"<color=yellow>아두이노 연결 시도 중... (시도: {attempts}/{MaxConnectionAttempts})</color>");
+        
+        try
+        {
+            // SerialPort 객체 재할당 (이전 실패 시의 잔여 객체 제거)
+            serialPort = new SerialPort(CurrentPortName, CurrentBaudRate);
+            serialPort.ReadTimeout = 10;
+            serialPort.Open();
+            IsConnected = true;
+
+            // 연결 성공 시 초기화
+            _calcPitch = 0f; _calcRoll = 0f;
+            Debug.Log($"<color=green>아두이노 연결 성공! [{CurrentPortName} @ {CurrentBaudRate}]</color>");
+            yield break; // 성공 시 코루틴 종료
+
+        }
+        catch (System.Exception ex)
+        {
+            IsConnected = false;
+            // 마지막 시도 후에도 실패하면 에러 출력
+            if (attempts == MaxConnectionAttempts)
+            {
+                Debug.LogError($"<color=red>최대 시도 횟수({MaxConnectionAttempts}회) 초과. 연결 실패 ({CurrentPortName}): {ex.Message}</color>");
+            }
+        }
+        if (!IsConnected)
+        {
+            yield return new WaitForSeconds(RetryDelay);
+        }
+    }
+}
 }
