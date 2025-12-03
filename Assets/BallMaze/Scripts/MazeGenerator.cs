@@ -27,7 +27,7 @@ public class MazeGenerator : MonoBehaviour
 
     Vector3 startPos;
     public GameObject Maze;
-    public const float ResetAngleTolerance = 10.0f;
+    public const float ResetAngleTolerance = 30.0f;
 
     // 내부 변수
     private Vector3 mazeStartPosition;
