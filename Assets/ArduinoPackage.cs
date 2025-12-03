@@ -77,7 +77,7 @@ public class ArduinoPackage : MonoBehaviour
     private const float PingInterval = 1.0f;
     private const float ArduinoDt = 0.1f; // 전송 주기
 
-    private const int MaxConnectionAttempts = 5;
+    private const int MaxConnectionAttempts = 10;
     private const float RetryDelay = 0.5f; // 재시도 간격 (0.5초)
     private Coroutine connectCoroutine; // 코루틴 참조 변수
 
