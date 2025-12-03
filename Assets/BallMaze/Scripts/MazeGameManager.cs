@@ -5,7 +5,7 @@ public class MazeGameManager : MonoBehaviour
 {
     [Header("References")]
     public MazeGenerator mazeGenerator;       // 미로 생성 스크립트
-    public ArduinoPackage arduinoPackage;     // 아두이노 통신 스크립트
+    private ArduinoPackage arduinoPackage;     // 아두이노 통신 스크립트
 
     [Header("UI")]
     public GameObject clearPanel;             // 클리어 시 뜰 패널
@@ -14,11 +14,7 @@ public class MazeGameManager : MonoBehaviour
 
     void Start()
     {
-        if (arduinoPackage == null)
-            arduinoPackage = FindObjectOfType<ArduinoPackage>();
-
-        if (arduinoPackage != null)
-            arduinoPackage.Connect();
+        arduinoPackage = FindObjectOfType<ArduinoPackage>();
 
         // 2. 게임 시작
         StartGame();

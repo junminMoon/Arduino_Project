@@ -22,23 +22,11 @@ public class DebugScene : MonoBehaviour
         {
             arduinoPackage = FindObjectOfType<ArduinoPackage>();
         }
-
-        if (arduinoPackage != null)
-        {
-            arduinoPackage.Connect(); // 연결 시작!
-        }
-        else
-        {
-            Debug.LogError("씬에 'ArduinoPackage' 스크립트가 붙은 오브젝트가 없습니다!");
-        }
     }
 
     void Update()
     {
         if (arduinoPackage == null) return;
-
-        // 1. 데이터 읽기 명령
-        arduinoPackage.ReadSerialLoop();
 
         // 2. UI 텍스트 갱신
         if (arduinoPackage.IsConnected)
