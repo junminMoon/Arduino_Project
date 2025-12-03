@@ -339,15 +339,16 @@ namespace KartGame.KartSystems
             if (m_CanMove)
             {
                 if (arduinoPackage != null)
-                {
-                    
+                {   
                     if (isTiltMode)
                     {
                         MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, tiltTurnInput);
+                        Debug.Log(tiltTurnInput);
                     }
                     else
                     {
                         MoveVehicle(arduinoPackage.IsButtonAPressed, arduinoPackage.IsButtonBPressed, arduinoPackage.JoyX);
+                        Debug.Log(arduinoPackage.JoyX);
                     }
                     MoveVehicle(Input.Accelerate, Input.Brake, Input.TurnInput);
                 }
