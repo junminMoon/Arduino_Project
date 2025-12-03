@@ -53,22 +53,26 @@ public class ArduinoPackage : MonoBehaviour
     public bool IsJoyPressed { get; private set; }
 
     // [Buttons] 버튼 값
+    public bool IsButtonAPressed { get; private set; }
+    public bool IsButtonBPressed { get; private set; }
     public bool IsButtonXPressed { get; private set; }
     public bool IsButtonYPressed { get; private set; }
-    public bool IsButtonBPressed { get; private set; }
-    public bool IsButtonAPressed { get; private set; }
     public bool IsTouchPressed { get; private set; }
 
     private bool m_PrevIsButtonAPressed;
     private bool m_PrevIsButtonBPressed;
     private bool m_PrevIsButtonXPressed;
     private bool m_PrevIsButtonYPressed;
+    private bool m_PrevIsTouchPressed;
+    private bool m_PrevIsJoyPressed;
 
     // 일회성 버튼 입력 값
     public bool IsButtonADown { get; private set; }
     public bool IsButtonBDown { get; private set; }
     public bool IsButtonXDown { get; private set; }
     public bool IsButtonYDown { get; private set; }
+    public bool IsTouchDown { get; private set; }
+    public bool IsJoyDown { get; private set; }
 
     // 내부 변수
     private SerialPort serialPort;
@@ -102,10 +106,12 @@ public class ArduinoPackage : MonoBehaviour
 
     void LateUpdate()
     {
-    IsButtonADown = false;
-    IsButtonBDown = false;
-    IsButtonXDown = false;
-    IsButtonYDown = false;
+        IsButtonADown = false;
+        IsButtonBDown = false;
+        IsButtonXDown = false;
+        IsButtonYDown = false;
+        IsTouchDown = false;
+        IsJoyDown = false;
     }
     
     // ==========================================
@@ -243,6 +249,8 @@ public class ArduinoPackage : MonoBehaviour
                 JoyY = ApplyDeadzone(MapValue(rawY));
                 int sw = int.Parse(values[2], CultureInfo.InvariantCulture);
                 IsJoyPressed = (sw == 0);
+                IsJoyDown = (sw == 0) && !m_PrevIsButtonAPressed;
+                m_PrevIsJoyPressed = (sw == 0);
             }
             catch { }
         }
@@ -294,6 +302,12 @@ public class ArduinoPackage : MonoBehaviour
             IsButtonYDown = isCurrentPressed && !m_PrevIsButtonYPressed;
             
             m_PrevIsButtonYPressed = isCurrentPressed;
+        }
+        if (key == "T")
+        {
+            IsTouchDown = isCurrentPressed && !m_PrevIsTouchPressed;
+            
+            m_PrevIsTouchPressed = isCurrentPressed;
         }
     }
 

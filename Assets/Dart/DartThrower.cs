@@ -4,7 +4,7 @@ using TMPro; // TextMeshPro 사용을 위해 네임스페이스 추가
 public class DartThrower : MonoBehaviour
 {
     [Header("연결 요소")]
-    public ArduinoPackage arduinoPackage; 
+    private ArduinoPackage arduinoPackage; 
     public GameObject dartPrefab;      // 날아갈 다트 프리팹
     public Transform spawnPoint;       // 다트가 생성될 위치 (손의 위치)
     private FollowCamera followCamera; // FollowCamera 참조
@@ -62,21 +62,14 @@ public class DartThrower : MonoBehaviour
                 UpdateAiming(currentDart.transform);
             }
 
-            // 던지기 감지: 가속도 체크
-            Vector3 currentAccel = new Vector3(
-                arduinoPackage.RawAccelX, 
-                arduinoPackage.RawAccelY, 
-                arduinoPackage.RawAccelZ
-            );
             
-            if (currentDart != null && currentAccel.magnitude > throwThreshold && Time.time > lastThrowTime + cooldownTime)
+            if (currentDart != null && arduinoPackage.RawAccelX > throwThreshold && Time.time > lastThrowTime + cooldownTime)
             {
-                ThrowDart(currentAccel);
+                ThrowDart(arduinoPackage.RawAccelX);
             }
         }
     }
 
-    // DartThrower.cs 코드 일부
     private void UpdateStatusUI(string message, Color color = default)
     {
         if (statusText != null)
@@ -121,10 +114,8 @@ public class DartThrower : MonoBehaviour
         }
     }
 
-    // 다트를 생성하고 물리 설정 비활성화 (손에 들고 있는 상태)
     void PrepareDart()
     {
-        // ... (이전 코드와 동일) ...
         if (dartPrefab == null) return;
         if (currentDart != null) Destroy(currentDart);
 
@@ -143,7 +134,6 @@ public class DartThrower : MonoBehaviour
         // ------------------------
     }
     
-    // 기울기를 받아 다트의 회전을 업데이트 (이전 코드와 동일)
     void UpdateAiming(Transform dartTransform)
     {
         float pitch = arduinoPackage.CurrentPitch;
@@ -156,7 +146,7 @@ public class DartThrower : MonoBehaviour
         dartTransform.localRotation = Quaternion.Slerp(dartTransform.localRotation, targetRotation, Time.deltaTime * rotationSmoothness);
     }
 
-    void ThrowDart(Vector3 sensorAccel)
+    void ThrowDart(float sensorAccel)
     {
         lastThrowTime = Time.time;
         isReadyToThrow = false; 
@@ -170,7 +160,7 @@ public class DartThrower : MonoBehaviour
         currentRb.isKinematic = false;
         currentRb.useGravity = true;
         
-        float power = sensorAccel.magnitude * forceMultiplier;
+        float power = sensorAccel * forceMultiplier;
         currentRb.AddForce(currentDart.transform.forward * power, ForceMode.Impulse);
         
         Debug.Log($"<color=cyan>다트 발사! Power: {power}</color>");
