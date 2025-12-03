@@ -27,8 +27,8 @@ public class MazeTiltController : MonoBehaviour
             }
             else
             {
-                pitch = arduinoPackage.JoyY * 250;
-                roll = arduinoPackage.JoyX * 250;
+                pitch = arduinoPackage.JoyX * 250;
+                roll = arduinoPackage.JoyY * 250;
             }
 
             ApplyRotation(pitch, roll);

@@ -67,7 +67,7 @@ public class ArduinoPackageKart : MonoBehaviour
     private const float ArduinoDt = 0.1f; // 전송 주기
 
 
-    void Awake()
+    void Start()
     {
         Connect();  
     }
