@@ -30,12 +30,6 @@ public class HorizontalButtonSelectorKart : MonoBehaviour
 
     void Update()
     {
-        // 1. 아두이노 시리얼 읽기 (Null 체크)
-        if (arduinoPackage != null) 
-        {
-            arduinoPackage.ReadSerialLoop();  
-        }
-
         // 2. 방향 입력 처리 (선택 이동)
         HandleDirectionalInput();
         

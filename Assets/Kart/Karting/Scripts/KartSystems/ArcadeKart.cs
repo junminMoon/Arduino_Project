@@ -179,7 +179,6 @@ namespace KartGame.KartSystems
         List<StatPowerup> m_ActivePowerupList = new List<StatPowerup>();
         ArcadeKart.Stats m_FinalStats;
 
-        private bool m_JustCollided = false;
         private float m_LastCollisionTime = 0f;
         private const float CollisionCooldown = 0.5f;
         Quaternion m_LastValidRotation;
@@ -229,17 +228,8 @@ namespace KartGame.KartSystems
                 trail.trailRoot.transform.rotation = transform.rotation;
             }
         }
-        void LateUpdate()
-        {
-          m_JustCollided = false;  
-        }
         void Update()
-        {
-            if (arduinoPackage != null) 
-            {
-                arduinoPackage.ReadSerialLoop();  
-            }
-            
+        {   
             if (arduinoPackage.IsButtonYPressed)
             {
                 if (isTiltMode == false)
@@ -270,11 +260,6 @@ namespace KartGame.KartSystems
             Rigidbody = GetComponent<Rigidbody>();
             m_Inputs = GetComponents<IInput>();
             arduinoPackage = FindObjectOfType<ArduinoPackageKart>();
-
-            if (arduinoPackage != null)
-            {
-                arduinoPackage.Connect();
-            }
 
             UpdateSuspensionParams(FrontLeftWheel);
             UpdateSuspensionParams(FrontRightWheel);
@@ -464,7 +449,6 @@ namespace KartGame.KartSystems
         void OnCollisionEnter(Collision collision)
         {
             m_HasCollision = true;
-            m_JustCollided = true;
 
             if (Time.time > m_LastCollisionTime + CollisionCooldown)
             {
@@ -677,13 +661,6 @@ namespace KartGame.KartSystems
             }
 
             ActivateDriftVFX(IsDrifting && GroundPercent > 0.0f);
-        }
-        void OnApplicationQuit()
-        {
-            if (arduinoPackage != null)
-            {
-                arduinoPackage.Disconnect();
-            }
         }
     }
 }

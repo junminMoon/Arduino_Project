@@ -25,11 +25,7 @@ public class MenuOpen : MonoBehaviour
 
         // 1. 아두이노 패키지가 연결되어 있다면 시리얼 통신을 읽고 버튼 상태를 확인합니다.
         if (arduinoPackage != null) 
-        {
-            // NullReferenceException 방지를 위해 null 체크 후 ReadSerialLoop 호출
-            arduinoPackage.ReadSerialLoop();
-            
-            // 아두이노 버튼이 눌렸는지 확인합니다.
+        {   
             isArduinoButtonPressed = arduinoPackage.IsButtonXPressed;
         }
 

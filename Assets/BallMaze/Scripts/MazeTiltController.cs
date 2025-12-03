@@ -1,29 +1,51 @@
 using UnityEngine;
+using TMPro;
 
 public class MazeTiltController : MonoBehaviour
 {
     public float maxAngle = 30.0f;
     public float smoothSpeed = 10.0f;
-
+    public bool isTiltMode = false;
+    public TextMeshProUGUI modeText;
+    float roll = 0;
+    float pitch = 0;
     private ArduinoPackage arduinoPackage;
 
     void Start()
     {
         arduinoPackage = FindObjectOfType<ArduinoPackage>();
-        arduinoPackage.Connect();
     }
 
     void Update()
     {
-        arduinoPackage.ReadSerialLoop();
-
         if (arduinoPackage.IsConnected)
         {
-            float pitch = arduinoPackage.CurrentPitch;
-            float roll = arduinoPackage.CurrentRoll;
+            if (isTiltMode)
+            {
+                pitch = arduinoPackage.CurrentPitch;
+                roll = arduinoPackage.CurrentRoll;
+            }
+            else
+            {
+                pitch = arduinoPackage.JoyY * 250;
+                roll = arduinoPackage.JoyX * 250;
+            }
 
             ApplyRotation(pitch, roll);
         }
+
+        if (arduinoPackage.IsButtonYPressed)
+        {
+            if (isTiltMode == false)
+            {
+                isTiltMode = true;
+            }
+            else
+            {
+                isTiltMode = false;
+            }
+        }
+        modeText.text = isTiltMode ? "Tilt" : "JoyStick";
     }
 
     void ApplyRotation(float pitch, float roll)
@@ -35,14 +57,5 @@ public class MazeTiltController : MonoBehaviour
         Quaternion targetRotation = Quaternion.Euler(roll, 0, pitch);
 
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
-    }
-
-    // 앱 종료 시 연결 해제 (필수)
-    void OnApplicationQuit()
-    {
-        if (arduinoPackage != null)
-        {
-            arduinoPackage.Disconnect();
-        }
     }
 }

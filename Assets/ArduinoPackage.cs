@@ -67,6 +67,16 @@ public class ArduinoPackage : MonoBehaviour
     private const float ArduinoDt = 0.1f; // 전송 주기
 
 
+    void Awake()
+    {
+        Connect();  
+    }
+
+    void Update()
+    {
+        ReadSerialLoop();
+    }
+
     // ==========================================
     // 3. 연결 및 해제 (수정됨!)
     // ==========================================
