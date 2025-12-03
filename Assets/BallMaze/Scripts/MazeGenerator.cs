@@ -7,6 +7,7 @@ public class MazeGenerator : MonoBehaviour
     public GameObject wallPrefab;
     public GameObject ballPrefab;
     public GameObject goalPrefab;
+    private ArduinoPackage arduinoPackage;
 
     [Header("Maze Settings")]
     // ★ [중요] 외벽(19) 안에 넣으려면 8칸(16)으로 설정해야 합니다. (9칸은 18이라서 겹침)
@@ -23,6 +24,8 @@ public class MazeGenerator : MonoBehaviour
 
     [Tooltip("미로 전체 위치 미세 조정 (X, Z축 이동)")]
     public Vector3 mazeOffset = Vector3.zero; // ◀️ [추가] 이걸로 X축 쏠림 해결!
+
+    Vector3 startPos;
 
     // 내부 변수
     private Vector3 mazeStartPosition;
@@ -149,7 +152,18 @@ public class MazeGenerator : MonoBehaviour
             }
         }
     }
+    void Start()
+    {
+        arduinoPackage = FindObjectOfType<ArduinoPackage>();
+    }
 
+    void Update()
+    {
+        if (arduinoPackage.IsButtonADown || Input.GetKeyDown(KeyCode.A))
+        {
+            CurrentBall.transform.localPosition = startPos;
+        }  
+    }
     void SetRandomStartAndExit()
     {
         Vector2Int[] corners = new Vector2Int[]
@@ -169,7 +183,7 @@ public class MazeGenerator : MonoBehaviour
         CurrentGoal = Instantiate(goalPrefab, transform);
         CurrentGoal.transform.localPosition = exitPos; 
 
-        Vector3 startPos = GetCellCenterPosition(startCoords.x, startCoords.y);
+        startPos = GetCellCenterPosition(startCoords.x, startCoords.y);
         startPos.y = 3.0f;
         CurrentBall = Instantiate(ballPrefab, transform);
         CurrentBall.transform.localPosition = startPos;
