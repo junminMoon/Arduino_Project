@@ -26,6 +26,8 @@ public class MazeGenerator : MonoBehaviour
     public Vector3 mazeOffset = Vector3.zero; // ◀️ [추가] 이걸로 X축 쏠림 해결!
 
     Vector3 startPos;
+    public GameObject Maze;
+    public const float ResetAngleTolerance = 1.0f;
 
     // 내부 변수
     private Vector3 mazeStartPosition;
@@ -159,7 +161,8 @@ public class MazeGenerator : MonoBehaviour
 
     void Update()
     {
-        if (arduinoPackage.IsButtonADown || Input.GetKeyDown(KeyCode.A))
+        float currentAngleDeviation = Quaternion.Angle(Maze.transform.rotation, Quaternion.identity);
+        if ((arduinoPackage.IsButtonADown || Input.GetKeyDown(KeyCode.A)) && currentAngleDeviation < ResetAngleTolerance)
         {
             Destroy(CurrentBall);
             CurrentBall = Instantiate(ballPrefab, transform);
