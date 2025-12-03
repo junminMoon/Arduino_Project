@@ -242,7 +242,7 @@ namespace KartGame.KartSystems
                     isTiltMode = false;
                 }
             }
-            tiltTurnInput = arduinoPackage.CurrentPitch / 250.0f;
+            tiltTurnInput = arduinoPackage.CurrentPitch / 180.0f;
             modeText.text = isTiltMode ? "Tilt" : "JoyStick";
         }
 
