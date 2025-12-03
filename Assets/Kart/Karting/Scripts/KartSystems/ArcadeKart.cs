@@ -197,9 +197,9 @@ namespace KartGame.KartSystems
 
         // 🚨 새로 추가된 적분 제어 변수
         [Tooltip("회전값(Steer Input)이 초당 증가/감소하는 속도입니다. 값이 클수록 회전이 빨라집니다.")]
-        public float TiltIntegrationRate = 2.0f; // 초당 2.0f 증가 (예시)
+        public float TiltIntegrationRate = 0.5f; // 초당 2.0f 증가 (예시)
         [Tooltip("회전을 시작하는 최소 Pitch 각도입니다. 이 각도 이내에서는 회전값이 0으로 복귀합니다.")]
-        public float TiltDeadzoneAngle = 5f;
+        public float TiltDeadzoneAngle = 10f;
 
         // 🚨 회전값을 누적할 내부 변수 (초기값 0)
         private float m_TiltAccumulator = 0f; 
