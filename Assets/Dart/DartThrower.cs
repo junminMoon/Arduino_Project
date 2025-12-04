@@ -93,8 +93,8 @@ public class DartThrower : MonoBehaviour
             }
             else
             {
-                shouldThrow = arduinoPackage.RawAccelX > throwThreshold && Time.time > lastThrowTime + cooldownTime;
-                actualAccel = arduinoPackage.RawAccelX;
+                shouldThrow = arduinoPackage.RawAccelY > throwThreshold && Time.time > lastThrowTime + cooldownTime;
+                actualAccel = arduinoPackage.RawAccelY;
             }
 
             if (currentDart != null && shouldThrow)
