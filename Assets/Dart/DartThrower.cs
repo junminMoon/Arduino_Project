@@ -87,6 +87,12 @@ public class DartThrower : MonoBehaviour
             bool shouldThrow = false;
             float actualAccel = 0f;
 
+            Vector3 currentAccel = new Vector3(
+                arduinoPackage.RawAccelX, 
+                arduinoPackage.RawAccelY, 
+                arduinoPackage.RawAccelZ
+            );
+
             if (isDebugging)
             {
                 shouldThrow = Input.GetKeyDown(debugThrowKey) && Time.time > lastThrowTime + cooldownTime;
@@ -94,8 +100,8 @@ public class DartThrower : MonoBehaviour
             }
             else
             {
-                shouldThrow = Mathf.Abs(arduinoPackage.RawAccelX) > throwThreshold && Time.time > lastThrowTime + cooldownTime;
-                actualAccel = arduinoPackage.RawAccelX;
+                shouldThrow = Mathf.Abs(currentAccel.magnitude) > throwThreshold && Time.time > lastThrowTime + cooldownTime;
+                actualAccel = currentAccel.magnitude;
             }
 
             if (currentDart != null && shouldThrow)
