@@ -48,7 +48,7 @@ public class DebugScene : MonoBehaviour
             // 6축 RAW 데이터 + 계산된 각도 표시
             gyroTest.text = $"Gyro\nX :{arduinoPackage.RawGyroX:F2}\nY : {arduinoPackage.RawGyroY:F2}\nZ : {arduinoPackage.RawGyroZ:F2}\n" +
                             $"Accel\nX : {arduinoPackage.RawAccelX:F2}\nY:{arduinoPackage.RawAccelY:F2}\nZ:{arduinoPackage.RawAccelZ:F2}\n" +
-                            $"Angle\nPitch : {arduinoPackage.CurrentPitch:F1}\nRoll : {arduinoPackage.CurrentRoll:F1}";
+                            $"Angle\nPitch : {arduinoPackage.CurrentPitch:F1}\nRoll : {arduinoPackage.CurrentRoll:F1}\nYaw : {arduinoPackage.CurrentYaw:F1}";
         }
         else
         {

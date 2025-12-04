@@ -38,6 +38,7 @@ public class ArduinoPackage : MonoBehaviour
     // [MPU6050] 기울기 값
     public float CurrentPitch { get; private set; }
     public float CurrentRoll { get; private set; }
+    public float CurrentYaw { get; private set; }
 
     // RAW Data
     public float RawGyroX { get; private set; }
@@ -75,7 +76,7 @@ public class ArduinoPackage : MonoBehaviour
     // 내부 변수
     private SerialPort serialPort;
 
-    private float _calcPitch, _calcRoll;
+    private float _calcPitch, _calcRoll, _calcYaw;
 
     private float lastPingTime = 0f;
     private const float PingInterval = 1.0f;
@@ -227,7 +228,7 @@ public class ArduinoPackage : MonoBehaviour
             RawGyroX = gx; RawGyroY = gy; RawGyroZ = gz;
             RawAccelX = ax; RawAccelY = ay; RawAccelZ = az;
 
-            CalculateComplementaryFilter(gx, gy, ax, ay, az);
+            CalculateComplementaryFilter(gx, gy, gz, ax, ay, az);
         }
         catch { }
     }
@@ -306,7 +307,7 @@ public class ArduinoPackage : MonoBehaviour
     // ==========================================
     // 5. 계산 및 유틸리티
     // ==========================================
-    private void CalculateComplementaryFilter(float gx, float gy, float ax, float ay, float az)
+    private void CalculateComplementaryFilter(float gx, float gy, float gz, float ax, float ay, float az)
     {
         // [축 교체 및 방향 보정]
         float accelRoll = Mathf.Atan2(ax, az) * Mathf.Rad2Deg;
@@ -314,14 +315,16 @@ public class ArduinoPackage : MonoBehaviour
 
         float gyroPitch = _calcPitch + (gy * Mathf.Rad2Deg * ArduinoDt);
         float gyroRoll = _calcRoll + (gx * Mathf.Rad2Deg * ArduinoDt);
+        float gyroYaw = _calcYaw + (gz * Mathf.Rad2Deg * ArduinoDt);
 
         _calcPitch = (filterWeight * gyroPitch) + ((1 - filterWeight) * accelPitch);
         _calcRoll = (filterWeight * gyroRoll) + ((1 - filterWeight) * accelRoll);
-        
+        _calcYaw = gyroYaw;
 
         CurrentPitch = _calcPitch;
         CurrentPitch *= -1;
         CurrentRoll = _calcRoll;
+        CurrentYaw = _calcYaw;
     }
 
     private float MapValue(float value) => (value / 1023.0f) * 2.0f - 1.0f;
