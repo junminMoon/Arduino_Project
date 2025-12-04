@@ -168,7 +168,7 @@ void UpdateGrippingState(bool isDebugging)
     {
         isGripping = true;
         PrepareDart();
-        UpdateStatusUI("🎯 조준 중... (발사 대기)", Color.green);
+        UpdateStatusUI("조준 중... (발사 대기)", Color.green);
     }
     else if (!touchPressed && isGripping)
     {
