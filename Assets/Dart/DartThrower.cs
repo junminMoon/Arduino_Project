@@ -1,6 +1,6 @@
 using UnityEngine;
 using TMPro; 
-using System.Collections; // 코루틴 사용
+using System.Collections; 
 
 public class DartThrower : MonoBehaviour
 {
@@ -48,8 +48,7 @@ public class DartThrower : MonoBehaviour
     // ==========================================
     private float lastThrowTime;
     private bool isReadyToThrow = true; 
-    private bool isGripping = false;    
-    private Quaternion m_AimingRotation = Quaternion.identity; // MPU 조준 회전값 저장용
+    private Quaternion m_AimingRotation = Quaternion.identity; 
 
     void Start()
     {
@@ -62,7 +61,7 @@ public class DartThrower : MonoBehaviour
         
         followCamera = FindObjectOfType<FollowCamera>();
     
-        UpdateStatusUI("Dart is Ready, please Touch!");
+        UpdateStatusUI("Dart is Ready. Aim by moving MPU.");
     }
 
     void Update()
@@ -75,47 +74,69 @@ public class DartThrower : MonoBehaviour
             arduinoPackage.ReadSerialLoop();
         }
         
-        UpdateGrippingState(isDebugging); 
+        // 🚨 1. 터치 센서 상태 확인 (발사 결정용)
+        bool touchPressed = isDebugging ? Input.GetKey(debugGripKey) : (arduinoPackage != null && arduinoPackage.IsTouchPressed);
 
-        if (isGripping && isReadyToThrow)
+        // 🚨 2. 다트 준비 (Aiming 상태 유지): 다트가 없고 쿨타임이 끝났으면 무조건 생성
+        if (currentDart == null && isReadyToThrow)
         {
-            if (currentDart != null && !isDebugging)
-            {
-                UpdateAiming(currentDart.transform);
-            }
+            PrepareDart();
+            UpdateStatusUI("Aiming Ready. Touch Sensor is OFF.");
+        }
+        
+        // 🚨 3. 조준 상태 업데이트 (다트가 존재하면 항상 실행)
+        if (currentDart != null)
+        {
+            UpdateAiming(currentDart.transform);
+        }
 
-            bool shouldThrow = false;
+        // 🚨 4. 발사 조건 체크 (터치가 눌리고, 쿨타임이 끝났을 때만 가속도 체크)
+        if (currentDart != null && isReadyToThrow && touchPressed)
+        {
             float actualAccel = 0f;
-
-            Vector3 currentAccel = new Vector3(
-                arduinoPackage.RawAccelX, 
-                arduinoPackage.RawAccelY, 
-                arduinoPackage.RawAccelZ
-            );
-
+            bool shouldThrow = false;
+            
             if (isDebugging)
             {
-                shouldThrow = Input.GetKeyDown(debugThrowKey) && Time.time > lastThrowTime + cooldownTime;
+                shouldThrow = Input.GetKeyDown(debugThrowKey);
                 actualAccel = debugAccel; 
             }
             else
             {
-                shouldThrow = Mathf.Abs(currentAccel.magnitude) > throwThreshold && Time.time > lastThrowTime + cooldownTime;
-                actualAccel = currentAccel.magnitude;
+                // 아두이노 모드: RawAccelX의 절대값이 임계값 초과 시 던지기
+                shouldThrow = Mathf.Abs(arduinoPackage.RawAccelX) > throwThreshold;
+                actualAccel = arduinoPackage.RawAccelX;
             }
 
-            if (currentDart != null && shouldThrow)
+            if (shouldThrow)
             {
                 ThrowDart(actualAccel); 
             }
+            else
+            {
+                // 터치 센서가 눌렸지만 가속도가 부족할 때
+                UpdateStatusUI("Touching... Release to cancel. Throw harder!");
+            }
+        }
+        else if (currentDart != null && !isReadyToThrow)
+        {
+            // 쿨다운 중일 때
+            UpdateStatusUI($"Reloading... ({(lastThrowTime + cooldownTime) - Time.time:F1}s)", Color.red);
+        }
+        else if (currentDart != null && !touchPressed)
+        {
+             // 조준 중일 때
+             UpdateStatusUI("Aiming Ready. Touch Sensor is OFF.");
         }
     }
+    
+    // 🚨 UpdateGrippingState 함수는 더 이상 사용하지 않습니다.
 
     // ==========================================
-    // 4. 상태 관리 및 UI
+    // 4. 다트 준비 (회전 보정 제거)
     // ==========================================
 
-    private void UpdateStatusUI(string message, Color color = default)
+    void UpdateStatusUI(string message, Color color = default)
     {
         if (statusText != null)
         {
@@ -124,45 +145,10 @@ public class DartThrower : MonoBehaviour
             {
                 statusText.color = color; 
             }
-        }
-    }
-
-    void UpdateGrippingState(bool isDebugging)
-    {
-        bool touchPressed = false;
-        
-        if (isDebugging)
-        {
-            touchPressed = Input.GetKey(debugGripKey); 
-        }
-        else
-        {
-            if (arduinoPackage == null) return; 
-            touchPressed = arduinoPackage.IsTouchPressed;
-        }
-
-        if (touchPressed && !isGripping && isReadyToThrow)
-        {
-            isGripping = true;
-            PrepareDart();
-            
-            string debugKeyMsg = isDebugging ? $" (Key: {debugThrowKey.ToString()})" : "";
-            UpdateStatusUI("Aiming" + debugKeyMsg, Color.green); 
-        }
-        else if (!touchPressed && isGripping)
-        {
-            isGripping = false;
-            if (currentDart != null)
+            else 
             {
-                Destroy(currentDart);
-                currentDart = null;
-                currentRb = null;
-                UpdateStatusUI("Dart Cancel, please Touch!", Color.black);
+                statusText.color = Color.black;
             }
-        }
-        else if (!isGripping && isReadyToThrow && currentDart == null)
-        {
-            UpdateStatusUI("Dart is Ready, please Touch!", Color.black);
         }
     }
 
@@ -174,7 +160,8 @@ public class DartThrower : MonoBehaviour
         currentDart = Instantiate(dartPrefab, spawnPoint.position, spawnPoint.rotation);
         currentDart.transform.SetParent(spawnPoint); 
         
-        // 🚨 프리팹의 로컬 회전은 그대로 유지합니다. (수동 보정 제거)
+        // 로컬 회전 강제 정렬 (프리팹의 로컬 Z축이 spawnPoint의 Z축을 향하도록 보장)
+        currentDart.transform.localRotation = Quaternion.identity; 
 
         currentRb = currentDart.GetComponent<Rigidbody>();
 
@@ -189,7 +176,7 @@ public class DartThrower : MonoBehaviour
     }
     
     // ==========================================
-    // 5. 발사 및 쿨다운 (최종 보정 로직 포함)
+    // 5. 발사 및 쿨다운 (최종 보정 로직 유지)
     // ==========================================
     
     void UpdateAiming(Transform dartTransform)
@@ -202,7 +189,7 @@ public class DartThrower : MonoBehaviour
         if (invertPitch) pitch *= -1;
         if (invertRoll) roll *= -1;
 
-        // 🚨 최종 수정: MPU 프레임 정렬을 위해 Pitch에 -90도 보정을 적용합니다.
+        // 🚨 MPU 프레임 정렬 보정 (-90도)
         Quaternion targetRotation = Quaternion.Euler(pitch + rotationOffset.x - 90f, rotationOffset.y, -roll + rotationOffset.z);
         
         m_AimingRotation = targetRotation; 
@@ -214,7 +201,6 @@ public class DartThrower : MonoBehaviour
     {
         lastThrowTime = Time.time;
         isReadyToThrow = false; 
-        isGripping = false;     
 
         StartCoroutine(ReloadCooldownCoroutine(cooldownTime));
         
@@ -231,7 +217,7 @@ public class DartThrower : MonoBehaviour
         Quaternion worldOffsetRotation = Quaternion.Euler(WorldLaunchOffset);
         baseLaunchDirection = worldOffsetRotation * baseLaunchDirection;
         
-        // 2. MPU 회전을 베이스 벡터에 적용하여 최종 발사 벡터 계산 (핵심 수정)
+        // 2. MPU 회전을 베이스 벡터에 적용하여 최종 발사 벡터 계산
         Vector3 finalThrowDirection = m_AimingRotation * baseLaunchDirection; 
         
         if (invertThrowDirection)
@@ -257,7 +243,8 @@ public class DartThrower : MonoBehaviour
     {
         UpdateStatusUI($"Reloading... ({duration:F1}s)", Color.red);
         
-        yield return new WaitForSecondsRealtime(duration);
+        // ForSecondsRealtime을 사용하여 Time.timeScale에 영향을 받지 않음
+        yield return new WaitForSecondsRealtime(duration); 
         
         ReloadComplete(); 
     }
@@ -265,27 +252,8 @@ public class DartThrower : MonoBehaviour
     // 재장전이 완료되면 다시 발사 가능 상태로 복귀
     void ReloadComplete()
     {
-        if (arduinoPackage == null)
-        {
-            isReadyToThrow = true;
-            isGripping = false;
-            UpdateStatusUI("Dart is Ready, please Touch!", Color.black);
-            return;
-        }
-
         isReadyToThrow = true;
-        
-        if (arduinoPackage.IsTouchPressed) 
-        {
-            isGripping = true;
-            PrepareDart();
-            UpdateStatusUI("Aiming...", Color.green);
-        }
-        else 
-        {
-            isGripping = false;
-            UpdateStatusUI("Dart is Ready, please Touch!", Color.black);
-        }
+        UpdateStatusUI("Dart is Ready. Aim by moving MPU.");
     }
 
     void OnApplicationQuit()
