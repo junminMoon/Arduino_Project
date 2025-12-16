@@ -195,11 +195,12 @@ namespace KartGame.KartSystems
         [Range(10f, 90f), Tooltip("회전 입력이 1.0이 되는 최대 Pitch 각도. (기존 로직 유지)")]
         public float MaxSteeringTiltAngle = 45f; 
 
-        // 🚨 새로 추가된 적분 제어 변수
-        [Tooltip("회전값(Steer Input)이 초당 증가/감소하는 속도입니다. 값이 클수록 회전이 빨라집니다.")]
-        public float TiltIntegrationRate = 0.5f; // 초당 2.0f 증가 (예시)
         [Tooltip("회전을 시작하는 최소 Pitch 각도입니다. 이 각도 이내에서는 회전값이 0으로 복귀합니다.")]
         public float TiltDeadzoneAngle = 10f;
+
+        float MaxTiltAngle = 25.0f;
+        // 핸들 회전 부드러움 정도 (높을수록 빠릿함, 낮을수록 부드러움. 10~20 추천)
+        float SteeringResponsiveness = 15.0f;
 
         // 🚨 회전값을 누적할 내부 변수 (초기값 0)
         private float m_TiltAccumulator = 0f; 
@@ -257,39 +258,37 @@ namespace KartGame.KartSystems
                 }
             }
 
-            currentPitch = arduinoPackage.CurrentPitch;
-            float targetSteerDirection = 0f; // 목표 회전 방향 (-1, 0, 1)
+            // 1. 입력 값 가져오기
+            float currentPitch = arduinoPackage.CurrentPitch;
+            float targetSteer = 0f;
 
-            // Deadzone (불감대)를 벗어났는지 확인하고 방향 설정
-            if (currentPitch > TiltDeadzoneAngle)
+            // 2. Deadzone 처리 및 목표값 설정 (비례 제어)
+            if (Mathf.Abs(currentPitch) > TiltDeadzoneAngle)
             {
-                // 오른쪽으로 기울임 (왼쪽으로 회전)
-                targetSteerDirection = -(currentPitch / Mathf.Abs(currentPitch)); // -1f
-            }
-            else if (currentPitch < -TiltDeadzoneAngle)
-            {
-                // 왼쪽으로 기울임 (오른쪽으로 회전)
-                targetSteerDirection = -(currentPitch / Mathf.Abs(currentPitch)); // 1f
-            }
-            // (참고: CurrentPitch의 값이 반전되어 들어온다고 가정하고 처리했습니다. 아닐 경우 부호를 반전하세요.)
-            
-            // 2. 누적 (적분) 계산
-            if (targetSteerDirection != 0)
-            {
-                // 기울인 방향으로 누적 값을 증가/감소시킵니다.
-                m_TiltAccumulator += targetSteerDirection * TiltIntegrationRate * Time.fixedDeltaTime;
+                // (현재 각도 / 최대 각도) 비율만큼 조향
+                // 예: 22.5도 기울이면 0.5(절반)만큼 꺾임
+                targetSteer = currentPitch / MaxTiltAngle;
+
+                // 방향 보정 (센서 값 반전 여부에 따라 부호 변경: -targetSteer or targetSteer)
+                targetSteer = -targetSteer;
             }
             else
             {
-                // Deadzone 안에 있으면 회전값을 0으로 복귀시킵니다.
-                m_TiltAccumulator = Mathf.MoveTowards(m_TiltAccumulator, 0f, TiltIntegrationRate * Time.fixedDeltaTime);
+                // 데드존 안이면 중앙(0)으로 복귀
+                targetSteer = 0f;
             }
-            
-            // 3. 최댓값 클램프 (1.0f를 넘지 않도록 제한)
-            m_TiltAccumulator = Mathf.Clamp(m_TiltAccumulator, -1.0f, 1.0f);
-            
-            // 🚨 새로운 누적 값(m_TiltAccumulator)을 회전 입력으로 사용
+
+            // 3. 최댓값 클램프 (-1 ~ 1 사이로 제한)
+            targetSteer = Mathf.Clamp(targetSteer, -1.0f, 1.0f);
+
+            // 4. 부드러운 보간 (Lerp) 적용 -> ★ 관성 해결의 핵심!
+            // 목표치(targetSteer)로 즉시 이동하지 않고, 부드럽게 따라가도록 함
+            // 누적(+=)이 아니라 위치 이동(Lerp)이므로 반대로 기울이면 즉시 반응함
+            m_TiltAccumulator = Mathf.Lerp(m_TiltAccumulator, targetSteer, SteeringResponsiveness * Time.deltaTime);
+
+            // 5. 최종 입력 적용
             tiltTurnInput = m_TiltAccumulator;
+
             modeText.text = isTiltMode ? "Tilt" : "JoyStick";
         }
 
